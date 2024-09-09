@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reiner Force VPN</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
+</head>
+<body>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 50px 20px;
+    }
+
+    .block {
+        height: 100vh;
+        transition: background-color 0.5s;
+    }
+
+    #block1 { background-color: #e0f7fa; } /* Синий блок */
+    #block2 { background-color: #c8e6c9; } /* Зеленый блок */
+    #block3 { background-color: #fffde7; } /* Блок с картой */
+    #block4 { background-color: #ffffff; } /* Блок с товарами */
+
+    .left, .right {
+        flex: 1;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .highlight-image {
+        opacity: 0.8;
+        width: 70%;
+        border-radius: 10px;
+        box-shadow: 0 0 0px rgba(0, 0, 0, 0.2);
+    }
+    .middle-image{
+        width: 50%;
+    }
+
+    .benefits li {
+        font-size: 1.2em;
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .benefits li span {
+        font-size: 1.5em;
+        margin-right: 10px;
+    }
+
+    h2 {
+        font-size: 2.5em;
+        color: #333;
+    }
+
+    .carousel {
+        display: flex;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding: 20px 0;
+    }
+
+    .item {
+        min-width: 300px;
+        margin-right: 20px;
+        padding: 20px;
+        background-color: #f1f1f1;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    #account-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 1000;
+        font-size: 1.1em;
+        backdrop-filter: blur(5px);
+        transition: opacity 0.3s;
+    }
+
+    #account-btn:hover {
+        opacity: 0.8;
+    }
+
+    /* Стиль для карты */
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+
+    .highlight-image-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    /* Центрирование контейнера */
+    .container-center {
+        text-align: center;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Заголовок по центру */
+    #block4 h2 {
+        font-size: 2.5em;
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+</style>
+
+<!-- Личный кабинет -->
+<button id="account-btn">Личный кабинет</button>
+
+<!-- Первый блок - Основные преимущества -->
+<section id="block1" class="block">
+    <div class="container">
+        <div class="left">
+            <div class="highlight-image-wrapper">
+                <img src="media/лого.png" alt="VPN" class="highlight-image">
+            </div>
+        </div>
+        <div class="right">
+            <h2>Почему Reiner Force VPN?</h2>
+            <ul class="benefits">
+                <li><span>🛡️</span> Высокая безопасность</li>
+                <li><span>⚡</span> Быстрая скорость соединения</li>
+                <li><span>🌍</span> Широкий выбор серверов по всему миру</li>
+                <li><span>🔒</span> Защита данных и конфиденциальность</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Второй блок - WireGuard и Shadowsocks -->
+<section id="block2" class="block">
+    <div class="container">
+        <div class="left">
+            <img src="media/wireguard.png" alt="WireGuard" class="middle-image">
+            <h2>WireGuard</h2>
+            <ul class="benefits">
+                <li><span>🔐</span> Современный протокол безопасности</li>
+                <li><span>⚙️</span> Высокая производительность</li>
+                <li><span>📡</span> Низкие требования к ресурсам</li>
+            </ul>
+        </div>
+        <div class="right">
+            <img src="media/shadow.png" alt="Shadowsocks" class="middle-image">
+            <h2>Shadowsocks</h2>
+            <ul class="benefits">
+                <li><span>🌐</span> Обход блокировок</li>
+                <li><span>📈</span> Быстрое подключение</li>
+                <li><span>🛠️</span> Легкая настройка</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Третий блок - Карта серверов -->
+<section id="block3" class="block">
+    <div id="map"></div>
+</section>
+
+<!-- Четвертый блок - Примеры товаров -->
+<!-- Четвертый блок - Примеры товаров -->
+<section id="block4" class="block">
+    <div class="container-center">
+        <h2>Наши предложения</h2>
+        <div class="carousel">
+            <div class="item">
+                <h3>VPN Basic</h3>
+                <p>Начальный пакет VPN</p>
+                <p>Цена: $5/мес</p>
+            </div>
+            <div class="item">
+                <h3>VPN Pro</h3>
+                <p>Продвинутый пакет VPN</p>
+                <p>Цена: $10/мес</p>
+            </div>
+            <div class="item">
+                <h3>VPN Ultra</h3>
+                <p>Максимальная защита и скорость</p>
+                <p>Цена: $20/мес</p>
+            </div>
+            <div class="item">
+                <h3>VPN Ultra</h3>
+                <p>Максимальная защита и скорость</p>
+                <p>Цена: $20/мес</p>
+            </div>
+            <div class="item">
+                <h3>VPN Ultra</h3>
+                <p>Максимальная защита и скорость</p>
+                <p>Цена: $20/мес</p>
+            </div>
+            <div class="item">
+                <h3>VPN Ultra</h3>
+                <p>Максимальная защита и скорость</p>
+                <p>Цена: $20/мес</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<script>
+    const imageWrapper = document.querySelector('.highlight-image-wrapper');
+    const image = document.querySelector('.highlight-image');
+
+    imageWrapper.addEventListener('mousemove', (e) => {
+        const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+        const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+        image.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+    });
+
+    imageWrapper.addEventListener('mouseenter', () => {
+        image.style.transition = 'none'; /* Убираем анимацию при наведении */
+    });
+
+    imageWrapper.addEventListener('mouseleave', () => {
+        image.style.transition = 'transform 0.5s ease';
+        image.style.transform = `rotateY(0deg) rotateX(0deg)`; /* Возвращаем в исходное положение */
+    });
+
+    // Mapbox initialization
+    mapboxgl.accessToken = 'pk.eyJ1Ijoicm9uaW4zNTQ2NTciLCJhIjoiY20wdXAxZG9nMTdtajJpczVkYnlhN2c0YiJ9.vAUFyu6IRiMEZSlhfDnj8A'; // Убедитесь, что вы используете действительный токен
+    const map = new mapboxgl.Map({
+        container: 'map', // контейнер для карты
+        style: 'mapbox://styles/mapbox/streets-v11', // стиль карты
+        center: [37.618423, 55.751244], // начальные координаты (центр Москвы)
+        zoom: 2 // начальный зум
+    });
+
+    // Добавление точек серверов (пример)
+    const servers = [
+        { coordinates: [37.618423, 55.751244], name: 'Москва' },
+        { coordinates: [-0.1276, 51.5074], name: 'Лондон' },
+        { coordinates: [-74.006, 40.7128], name: 'Нью-Йорк' },
+        { coordinates: [13.4105, 52.5244], name: 'Берлин' },
+        { coordinates: [4.88969, 52.374], name: 'Амстердам' },
+    ];
+
+    servers.forEach(server => {
+        new mapboxgl.Marker()
+            .setLngLat(server.coordinates)
+            .setPopup(new mapboxgl.Popup().setHTML(`<h3>${server.name}</h3>`))
+            .addTo(map);
+    });
+</script>
+</body>
+</html>
