@@ -5,9 +5,9 @@ import "gorm.io/gorm"
 // Модель для пользователей
 type User struct {
 	gorm.Model
-	Id        uint `gorm:"primaryKey;autoIncrement;not null;unique"` //ид системы
-	Tgid      uint `gorm:"primaryKey;not null;unique"`               //ид тг для входа
-	Mail      string
+	Id        uint     `gorm:"primaryKey;autoIncrement;not null;unique"` //ид системы
+	Tgid      uint     `gorm:"primaryKey;not null;unique"`               //ид тг для входа
+	Mail      string   `gorm:"default:'null'"`
 	Password  string   `gorm:"default:'null'"` //пароль
 	Isblocked bool     `gorm:"default:false"`  //заблоирован ли пользователь
 	Config    []Config `gorm:"foreignKey:Userid"`
