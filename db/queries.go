@@ -8,86 +8,149 @@ import (
 	"os"
 )
 
-var load_err = godotenv.Load("config.env")
-var db_path = os.Getenv("DB_PATH")
+func init_() *gorm.DB {
+	var load_err = godotenv.Load("config.env")
+	if load_err != nil {
+		log.Println("Ошибка подключения к базе", load_err)
+	}
 
-var db, err = gorm.Open(postgres.Open(db_path), &gorm.Config{})
+	var db_path = os.Getenv("DB_PATH")
+
+	var db, err = gorm.Open(postgres.Open(db_path), &gorm.Config{})
+	if err != nil {
+		log.Println("Ошибка подключения к базе", err)
+	}
+	return db
+}
+
+var db = init_()
 
 // миграция баз данных
 func Migrations() {
-	if err != nil {
-		log.Println("Ошибка подключения к базе", err)
-	} else {
-		//снос таблиц
-		//db.Migrator().DropTable(&User{})
-		//db.Migrator().DropTable(&Products{})
-		//db.Migrator().DropTable(&Config{})
+	//снос таблиц
+	//db.Migrator().DropTable(&User{})
+	//db.Migrator().DropTable(&Products{})
+	//db.Migrator().DropTable(&Config{})
 
-		//выполнение миграций
-		db.AutoMigrate(&User{})
-		db.AutoMigrate(&Products{})
-		db.AutoMigrate(&Config{})
+	//выполнение миграций
+	db.AutoMigrate(&User{})
+	db.AutoMigrate(&Products{})
+	db.AutoMigrate(&Config{})
 
-		//отчет
-		log.Println("Миграции выполнены")
-	}
+	//отчет
+	log.Println("Миграции выполнены")
 }
 
+// -------------------------------- ПОЛЬЗОВАТЕЛИ --------------------------------
+
 // добовление нового пользователя
-func Adduser(user User) int {
-
+func Adduser(user User) bool {
 	result := db.Create(&user) // pass pointer of data to Create
-
 	if result.Error == nil {
 		log.Println("Добавлен пользователь ", user.ID)
-		return int(user.ID)
+		return true
 	} else {
 		log.Println("Ошибка добавдение данных", result.Error)
-		return -1
+		return false
 	}
 }
 
 // получить всех пользователей
 func GetUsers() *[]User {
-	// Get all record
 	var users []User
-	db.Find(&users)
+	err := db.Find(&users)
+	if err.Error != nil {
+		log.Println(err)
+		return &[]User{}
+	}
 	return &users
 }
 
+//пполучение данных пользователя
+//изменения пользователя
+//изменения пароля пользователя
+
+// -------------------------------- ТОВАРЫ --------------------------------
 // добовление новый товар
-func Addproduct(price uint, term uint, name string) int {
-	product := Products{Price: price, Term: term, Name: name}
+func Addproduct(product Products) bool {
 	result := db.Create(&product)
 	if result.Error == nil {
 		log.Println("Добавлен товар ", product.ID)
-		return int(product.ID)
+		return true
 	} else {
 		log.Println("Ошибка добавление данных", result.Error)
-		return -1
+		return false
 	}
 }
 
+// Получение всех товаров
 func Getproducts() *[]Products {
-	// Get all record
 	var products []Products
-	result := db.Find(&products)
-	//запись в удобную форму
-	get_productns := make([]Products, result.RowsAffected)
-	//обработка ответа
-	if result.Error != nil {
-		log.Println(result.Error)
-	} else {
-		//перебор и добавление продуктов в виде id:цена
-		for i, product := range products {
-			get_productns[i] = Products{Name: product.Name, Price: product.Price, Term: product.Term}
-		}
+	err := db.Find(&products)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return &[]Products{}
 	}
-	return &get_productns
+	return &products
+}
 
-	//для теста
-	//products := db.Getproducts()
-	//for _, product := range products {
-	//	log.Println("Название ", product.Name, "Цена ", product.Price, "Время ", product.Term)
-	//}
+// изменение названия товара
+func UpdProductName(id uint, name string) bool {
+	var product = Products{Id: id}
+	err := db.First(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	product.Name = name
+	err = db.Save(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	return true
+}
+
+// изменение цены товара
+func UpdProductPrice(id, price uint) bool {
+	var product = Products{Id: id}
+	err := db.First(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	product.Price = price
+	err = db.Save(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	return true
+}
+
+// изменение времени товара
+func UpdProductTerm(id, term uint) bool {
+	var product = Products{Id: id}
+	err := db.First(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	product.Term = term
+	err = db.Save(&product)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	return true
+}
+
+// Удаление товара
+func Dellproducts(id uint) bool {
+	err := db.Delete(&Products{}, id)
+	if err.Error != nil {
+		log.Println("Ошибка получения продуктов", err)
+		return false
+	}
+	return true
 }
