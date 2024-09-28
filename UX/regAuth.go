@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+// страница регистрации
 func Reg(c *fiber.Ctx) error {
 	// Парсим файл шаблона
 	tmpl, err := template.ParseFiles("./UI/registr.gohtml")
@@ -25,6 +26,8 @@ func Reg(c *fiber.Ctx) error {
 	// Отправляем отрендеренный шаблон в ответ
 	return c.Type("html").Send(buf.Bytes())
 }
+
+// страница авторизации
 
 func Auth(c *fiber.Ctx) error {
 	// Парсим файл шаблона
