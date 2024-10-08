@@ -20,22 +20,22 @@ type PeerConfig struct {
 	Endpoint   string
 }
 
-// Конфигурационная клиента
+// Структура для клиента
 type Client struct {
 	Id               int
-	Satus            bool
+	Status           bool
 	AddressClient    string
-	Pubkey_path      string
-	Privkey_path     string
+	PubkeyPath       string
+	PrivkeyPath      string
 	PrivateClientKey string
-	PublickClientKey string
+	PublicClientKey  string
 	Peer             PeerConfig
-	Peer_str         string
+	PeerStr          string
 	Config           string
-	Tg_id            int
+	TgId             int
 }
 
-// Управление сервером wiredurd
+// Управление сервером WireGuard
 type WireGuardConfig struct {
 	PrivateKey string
 	PublicKey  string
@@ -43,57 +43,99 @@ type WireGuardConfig struct {
 	ListenPort string
 	InterName  string
 	BotToken   string
-
-	Clients map[int]*Client
+	Clients    map[int]Client // Используем указатели на клиентов
 }
 
 // ------------------------ методы для клиентов ------------------------
 // Остановка клиента
-func (clients *WireGuardConfig) StopClient(id int) {
-	client := clients.Clients[id]
+func (wg WireGuardConfig) StopClient(id int) {
+	client, exists := wg.Clients[id]
+	if !exists {
+		log.Printf("Клиент с id %d не найден", id)
+		return
+	}
+	defer func() { wg.Clients[id] = client }()
+	//fmt.Println(wg.Clients[id])
+
 	filePath := "/etc/wireguard/wg0.conf"
-	// Чтение содержимого файла
-	content, _ := os.ReadFile(filePath)
-	// Преобразование содержимого в строку
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("Ошибка чтения файла конфигурации: %v", err)
+		return
+	}
+	defer restWireguard()
+
 	fileContent := string(content)
-	// Поиск и удаление блока Peer
-	updatedContent := strings.Replace(fileContent, client.Peer_str, "", 1)
-	// Перезапись файла
-	os.WriteFile(filePath, []byte(updatedContent), 0644)
+	client.Status = false
+	updatedContent := strings.Replace(fileContent, client.PeerStr, "", 1)
+
+	err = os.WriteFile(filePath, []byte(updatedContent), 0644)
+	if err != nil {
+		log.Printf("Ошибка записи файла конфигурации: %v", err)
+		return
+	}
+
+	log.Printf("Клиент с id %d остановлен", id)
 }
 
-// активация клиента
-func (clients *WireGuardConfig) ActClient(id int) {
-	client := clients.Clients[id]
+// Активация клиента
+func (wg WireGuardConfig) ActClient(id int) {
+	client, exists := wg.Clients[id]
+	if !exists {
+		log.Printf("Клиент с id %d не найден", id)
+		return
+	}
+	//fmt.Println(wg.Clients[id])
+	defer restWireguard()
+
 	filePath := "/etc/wireguard/wg0.conf"
-	os.WriteFile(filePath, []byte(client.Peer_str), 0644)
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("Ошибка чтения файла конфигурации: %v", err)
+		return
+	}
+	defer func() { wg.Clients[id] = client }()
+
+	client.Status = true
+	updatedContent := string(content) + "\n" + client.PeerStr
+
+	err = os.WriteFile(filePath, []byte(updatedContent), 0644)
+	if err != nil {
+		log.Printf("Ошибка записи файла конфигурации: %v", err)
+		return
+	}
+
+	log.Printf("Клиент с id %d активирован", id)
 }
 
 // Удаление клиента
-func (clients *WireGuardConfig) DeleteClient(id int) {
-	clients.StopClient(id)
-	client := clients.Clients[id]
-	err := os.Remove(client.Privkey_path)
-	if err != nil {
-		log.Printf("не удалось удалить файл: %v", err)
-	}
-	err = os.Remove(client.Pubkey_path)
-	if err != nil {
-		log.Printf("не удалось удалить файл: %v", err)
-	}
+func (wg *WireGuardConfig) DeleteClient(id int) {
+	wg.StopClient(id)
+
+	//err := os.Remove(fmt.Sprintf("/etc/wireguard/wg_client_%d_private", id))
+	//if err != nil {
+	//	log.Printf("Не удалось удалить файл: %v", err)
+	//}
+	//
+	//err = os.Remove(fmt.Sprintf("/etc/wireguard/wg_client_%d_public", id))
+	//if err != nil {
+	//	log.Printf("Не удалось удалить файл: %v", err)
+	//}
+
+	delete(wg.Clients, id)
 }
 
 // вывод всех клиентов
 func (clients *WireGuardConfig) AllClients() string {
 	text := ""
-	for _, client := range clients.Clients {
+	for id, client := range clients.Clients {
 		var stat string
-		if client.Satus {
-			stat = "Остановлен"
-		} else {
+		if client.Status {
 			stat = "Активен"
+		} else {
+			stat = "Остановлен"
 		}
-		text += fmt.Sprintf("Клиент %d статус %s адресс %s \n", client.Id, stat, client.AddressClient)
+		text += fmt.Sprintf("Клиент %d статус %s адресс %s \n", id, stat, client.AddressClient)
 	}
 	return text
 
@@ -210,113 +252,83 @@ func (wg *WireGuardConfig) WireguardStart() {
 	}
 	//log.Printf("Соединение wireguard запущено")
 }
-
-// Генерация конфигурации клиента WireGuard
-func (wg *WireGuardConfig) AddWireguardClient(client_id int) (string, *Client) {
-	i, ok := wg.Clients[client_id]
-	Config := &Client{}
-	if ok {
-		Config = i
-	} else {
-		Config = &Client{}
-		wg.Clients[client_id] = Config
+func restWireguard() {
+	cmd := exec.Command("systemctl", "restart", "wg-quick@wg0")
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("failed to apply sysctl changes: %v", err.Error())
 	}
-	tmpl := `[Interface]
-Address = {{.AddressClient}}
-PrivateKey = {{.PrivateClientKey}}
-DNS = 8.8.8.8
 
-[Peer]
-Endpoint = {{.Endpoint}}
-PublicKey = {{.PublicKey}}
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 10`
-	// имена ключей
-	clientPubname := fmt.Sprintf("/etc/wireguard/wg_client_%d_punlick", client_id)
-	clientPrivname := fmt.Sprintf("/etc/wireguard/wg_client_%d_private", client_id)
-	var clienPrivateKey, clienPublickKey string
-	////
-	var privateKey bytes.Buffer
+}
+
+// Добавление клиента WireGuard
+func (wg *WireGuardConfig) AddWireguardClient(clientID int) (Client, int) {
+	// Инициализация карты клиентов, если она nil
+	if wg.Clients == nil {
+		wg.Clients = make(map[int]Client)
+	}
+	defer restWireguard()
+	// Проверяем, существует ли клиент
+	client, exists := wg.Clients[clientID]
+	if !exists {
+		client = Client{Id: clientID}
+		wg.Clients[clientID] = client
+	}
+	defer func() { wg.Clients[clientID] = client }()
+	// Генерация ключей для клиента
+	var privateKey, publicKey bytes.Buffer
 	cmd := exec.Command("wg", "genkey")
 	cmd.Stdout = &privateKey
 	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("failed to generate private key: %v", err)
-	}
-	// Сохраняем приватный ключ в переменную
-	clienPrivateKey = strings.ReplaceAll(privateKey.String(), "\n", "")
-	// Используем приватный ключ для генерации публичного ключа
-	var publicKey bytes.Buffer
+
+	client.PrivateClientKey = strings.TrimSpace(privateKey.String())
 	cmd = exec.Command("wg", "pubkey")
 	cmd.Stdin = &privateKey
 	cmd.Stdout = &publicKey
-
 	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("failed to generate public key: %v", err)
-	}
-	clienPublickKey = strings.ReplaceAll(publicKey.String(), "\n", "")
-	//запись
-	os.WriteFile(clientPrivname, []byte(clienPrivateKey), 0600)
-	os.WriteFile(clientPubname, []byte(clienPublickKey), 0600)
-	//
-	log.Printf("Ключи для клента созданы и записаны в файлы")
-	fmt.Println("приватный ключ : ", clienPrivateKey)
-	fmt.Println("публичный ключ : ", clienPublickKey)
 
-	//доностройка конфига клиента
-	//config.ServerPubKey = publickkey
-	Config.PrivateClientKey = clienPrivateKey
-	Config.PublickClientKey = clienPublickKey
-	Config.AddressClient = fmt.Sprintf("10.0.0.%d/24", client_id)
-	// файл конфигурации
-	file, err := os.OpenFile("/etc/wireguard/wg0.conf", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	client.PublicClientKey = strings.TrimSpace(publicKey.String())
+	client.AddressClient = fmt.Sprintf("10.0.0.%d/24", clientID)
+	client.Peer.Endpoint = wg.Endpoint
+	client.Peer.PublicKey = wg.PublicKey
+	peer := fmt.Sprintf("\n[Peer]\nPublicKey = %s\nAllowedIPs = %s\n", strings.TrimSpace(publicKey.String()), fmt.Sprintf("10.0.0.%d/24", clientID))
+	client.PeerStr = peer
+	filePath := "/etc/wireguard/wg0.conf"
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Println("Ошибка открытия файла:", err)
+		panic(err)
 	}
-	defer file.Close()
-	// добавление пира
-	peer := `
+	defer f.Close()
+	if _, err = f.WriteString(peer); err != nil {
+		panic(err)
+	}
+	client.Status = true
+	// Генерация и сохранение конфигурации клиента
+	clientConfig := fmt.Sprintf(`[Interface]
+Address = %s
+PrivateKey = %s
+DNS = 8.8.8.8
 
 [Peer]
-PublicKey = {{.PublickClientKey}}
-AllowedIPs = {{.AddressClient}}
-`
-	t_p := template.Must(template.New("wgClientConfig").Parse(peer))
-	if err := t_p.Execute(file, Config); err != nil {
-	}
-	// создание клиентского конфига
-	t := template.Must(template.New("wgClientConfig").Parse(tmpl))
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, Config); err != nil {
-	}
-	//перезапуск wireguard для сощ=здания пиров
-	cmd = exec.Command("sudo", "systemctl", "restart", "wg-quick@wg0")
-	cmd.Run()
-	err = cmd.Err
-	if err != nil {
-		log.Printf("failed to create keys : %v", err.Error())
-	}
-	log.Printf("wireguard перезапущен")
-	Config.Config = buf.String()
-	return buf.String(), Config
+Endpoint = %s
+PublicKey = %s
+AllowedIPs = 0.0.0.0/0
+    `, client.AddressClient, client.PrivateClientKey, wg.Endpoint, wg.PublicKey)
+
+	client.Config = clientConfig
+	return client, clientID
 }
 
 // Отправка конфигурации через Telegram
 func (wg *WireGuardConfig) SendConfigToUserTg(user_id int) {
 	//создание бота
-	i, ok := wg.Clients[user_id]
-	Cl := &Client{}
-	if ok {
-		Cl = i
-	} else {
-		Cl = &Client{}
-		wg.Clients[user_id] = Cl
-	}
-	chatID := telebot.ChatID(int64(Cl.Tg_id))
+	Cl, _ := wg.Clients[user_id]
+
+	chatID := telebot.ChatID(int64(Cl.TgId))
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: wg.BotToken,
 	})
+
 	//файл с конфигураций
 	reader := strings.NewReader(Cl.Config)
 	// Создаем документ для отправки, передавая reader как содержимое файла
