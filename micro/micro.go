@@ -20,7 +20,7 @@ func main() {
 		"6 Все клиенты\n" +
 		"0 В меню\n" +
 		"-1 Выйти\n" +
-		"-2 Удалить и отключить wiregurad,выйти"
+		"-2 Удалить и отключить wiregurad,выйти\n"
 	//прием команд
 	var comand int
 	fmt.Printf(firstMess)
@@ -29,45 +29,64 @@ br:
 		fmt.Fscan(os.Stdin, &comand)
 		switch comand {
 		case 1: // задание основных настроек
-			port := ""
-			fmt.Println("Введите порт,или 0 для порта 51820: ")
-			fmt.Scanln(&port)
-			if port == "0" {
-				wg_client.ListenPort = "51820"
+			tp := 0
+			fmt.Println("если хотите автоматическую настройку введите 0,ручной режим 1")
+			fmt.Scanln(&tp)
+			if tp != 0 {
+				port := ""
+				fmt.Println("Введите порт,или 0 для порта 51820: ")
+				fmt.Scanln(&port)
+				if port == "0" {
+					wg_client.ListenPort = "51820"
+				} else {
+					wg_client.ListenPort = port
+				}
+				ip := ""
+				fmt.Println("Введите ip сервера : ")
+				fmt.Scanln(&ip)
+				wg_client.Endpoint = ip + ":" + wg_client.ListenPort
+				inter := ""
+				fmt.Println("Введите имя интерфейса,или 0 для eth0 : ")
+				fmt.Scanln(&inter)
+				if inter == "0" {
+					wg_client.InterName = "eth0"
+				} else {
+					wg_client.InterName = inter
+				}
+				fmt.Println("Введите токен бота : ")
+				fmt.Scanln(&wg_client.BotToken)
+				fmt.Println("Параметры успешно заданы")
+				wg_client.CollectTraffic()
+				wg_client.GenServerKeys()
+				fmt.Println()
+				fmt.Println("Созданный приватный ключ : ", wg_client.PrivateKey)
+				fmt.Println("Созданный публичный ключ : ", wg_client.PublicKey)
+				fmt.Println()
+				fmt.Println("Создана конфигурация с такими параметрами:")
+				fmt.Println("Порт : ", wg_client.ListenPort)
+				fmt.Println("Приватный ключ сервера : ", wg_client.PrivateKey)
+				fmt.Println("Имя интерфейса : ", wg_client.InterName)
+				fmt.Println("Адресом : 10.0.0.1/24")
+				fmt.Println("Эндпоинт : ", wg_client.Endpoint)
+				fmt.Println()
+				wg_client.GenerateWireGuardConfig()
+				wg_client.WireguardStart()
+				log.Printf("Соединение wireguard запущено")
 			} else {
-				wg_client.ListenPort = port
+				wg_client.Autostart() //атвостарт
+				fmt.Println("Введите токен бота : ")
+				fmt.Scanln(&wg_client.BotToken)
+				//fmt.Println(wg_client.Endpoint, wg_client.InterName, wg_client.ListenPort)
+				fmt.Println("Данные выставлены")
+				fmt.Println("Созданный приватный ключ : ", wg_client.PrivateKey)
+				fmt.Println("Созданный публичный ключ : ", wg_client.PublicKey)
+				fmt.Println("Создана конфигурация с такими параметрами:")
+				fmt.Println("Порт : ", wg_client.ListenPort)
+				fmt.Println("Приватный ключ сервера : ", wg_client.PrivateKey)
+				fmt.Println("Имя интерфейса : ", wg_client.InterName)
+				fmt.Println("Адресом : 10.0.0.1/24")
+				fmt.Println("Эндпоинт : ", wg_client.Endpoint)
 			}
-			ip := ""
-			fmt.Println("Введите ip сервера : ")
-			fmt.Scanln(&ip)
-			wg_client.Endpoint = ip + ":" + wg_client.ListenPort
-			inter := ""
-			fmt.Println("Введите имя интерфейса,или 0 для eth0 : ")
-			fmt.Scanln(&inter)
-			if inter == "0" {
-				wg_client.InterName = "eth0"
-			} else {
-				wg_client.InterName = inter
-			}
-			fmt.Println("Введите токен бота : ")
-			fmt.Scanln(&wg_client.BotToken)
-			fmt.Println("Параметры успешно заданы")
-			wg_client.CollectTraffic()
-			wg_client.GenServerKeys()
-			fmt.Println()
-			fmt.Println("Созданный приватный ключ : ", wg_client.PrivateKey)
-			fmt.Println("Созданный публичный ключ : ", wg_client.PublicKey)
-			fmt.Println()
-			fmt.Println("Создана конфигурация с такими параметрами:")
-			fmt.Println("Порт : ", wg_client.ListenPort)
-			fmt.Println("Приватный ключ сервера : ", wg_client.PrivateKey)
-			fmt.Println("Имя интерфейса : ", wg_client.InterName)
-			fmt.Println("Адресом : 10.0.0.1/24")
-			fmt.Println("Эндпоинт : ", wg_client.Endpoint)
-			fmt.Println()
-			wg_client.GenerateWireGuardConfig()
-			wg_client.WireguardStart()
-			log.Printf("Соединение wireguard запущено")
 		case 2: //Добавление клиента
 			client, _ := wg_client.AddWireguardClient(id)
 			fmt.Println("Данные клиента : ")

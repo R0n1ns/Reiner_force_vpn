@@ -3,11 +3,16 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"gopkg.in/telebot.v3"
+	"io/ioutil"
 	"log"
+	"math/rand"
+	"net"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -140,6 +145,14 @@ func (clients *WireGuardConfig) AllClients() string {
 	return text
 
 }
+func (wg *WireGuardConfig) Autostart() {
+	wg.RandomPort()
+	wg.GetIPAndInterfaceName()
+	wg.GenServerKeys()
+	wg.GenerateWireGuardConfig()
+	// wg_client.CollectTraffic()
+	wg.WireguardStart()
+}
 
 // генерируем ключи
 func (wg *WireGuardConfig) GenServerKeys() {
@@ -172,6 +185,67 @@ func (wg *WireGuardConfig) GenServerKeys() {
 	wg.PublicKey = publickkey
 	wg.PrivateKey = privatekey
 }
+func (wg *WireGuardConfig) RandomPort() {
+	wg.ListenPort = strconv.Itoa(rand.Intn(100000))
+	//fmt.Println(wg.ListenPort)
+}
+
+type NetworkInterface struct {
+	Name string
+	IsUp bool
+	IPs  []string
+}
+
+func (cfg *WireGuardConfig) GetIPAndInterfaceName() error {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return err
+	}
+
+	for _, iface := range interfaces {
+		// Пропускаем неактивные интерфейсы или интерфейсы без нужных флагов
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return err
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Пропускаем не IPv4 адреса
+			if ip == nil || ip.To4() == nil {
+				continue
+			}
+
+			cfg.InterName = iface.Name
+			cfg.Endpoint = ip.String() + ":" + cfg.ListenPort
+			return nil
+		}
+	}
+
+	return fmt.Errorf("не удалось найти подходящий IP-адрес и интерфейс")
+}
+
+// Функция для определения, является ли интерфейс проводным
+func isWiredInterface(name string) bool {
+	return strings.HasPrefix(name, "e") || strings.Contains(name, "eth") || strings.Contains(name, "en")
+}
+
+// Функция для определения, является ли интерфейс беспроводным
+func isWirelessInterface(name string) bool {
+	return strings.HasPrefix(name, "w") || strings.Contains(name, "wl") || strings.Contains(name, "wlan")
+}
 
 // Генерация конфигурации WireGuard
 func (wg *WireGuardConfig) GenerateWireGuardConfig() {
@@ -188,7 +262,7 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, wg); err != nil {
 	}
-
+	// Генерация случайного числа от 0 до 99999
 	// Открытие файла для записи
 	filePath := "/etc/wireguard/wg0.conf"
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -394,9 +468,114 @@ func (wg *WireGuardConfig) DropWireguard() {
 	log.Printf("Папка конфиураций wireguuard очищена")
 }
 
-// Сбор трафика
+// // Сбор трафика
+//
+//	func (wg *WireGuardConfig) CollectTraffic() {
+//		cmd := exec.Command("wg-json")
+//		go cmd.Run() // Запускаем в горутине
+//		log.Println("Сбор трафика начат. Для остановки используйте Ctrl+C.")
+//	}
+//
+// Структура для хранения выходных данных команды wg-json
+type PeerStats struct {
+	TransferRx uint64
+	TransferTx uint64
+}
+
+type PeerTraffic struct {
+	Time    string `json:"time"`
+	Traffic uint64 `json:"traffic"`
+}
+
 func (wg *WireGuardConfig) CollectTraffic() {
-	cmd := exec.Command("tcpdump", "-i", wg.InterName, "-w", "traffic.pcap", "-T", "json", ">", "traffic.json")
-	go cmd.Run() // Запускаем в горутине
-	log.Println("Сбор трафика начат. Для остановки используйте Ctrl+C.")
+	previousPeerStats := make(map[string]PeerStats)
+	for {
+		// Run 'wg show all dump'
+		cmd := exec.Command("wg", "show", "all", "dump")
+		output, err := cmd.Output()
+
+		if err != nil {
+			log.Printf("Error running wg command: %v", err)
+			continue
+		}
+
+		// Split output into lines
+		lines := strings.Split(string(output), "\n")
+
+		currentPeerStats := make(map[string]PeerStats)
+		peerTraffic := make(map[string]PeerTraffic)
+		currentTime := time.Now().Format(time.RFC3339)
+
+		// Process each line
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			fields := strings.Split(line, "\t")
+			if len(fields) == 9 {
+				// This is a peer line
+				// Fields: interface, public-key, preshared-key, endpoint, allowed-ips, latest-handshake, transfer-rx, transfer-tx, persistent-keepalive
+				peerAddress := fields[3] // Using 'endpoint' as the peer address
+				transferRxStr := fields[6]
+				transferTxStr := fields[7]
+
+				transferRx, err := strconv.ParseUint(transferRxStr, 10, 64)
+				if err != nil {
+					log.Printf("Error parsing transferRx: %v", err)
+					continue
+				}
+				transferTx, err := strconv.ParseUint(transferTxStr, 10, 64)
+				if err != nil {
+					log.Printf("Error parsing transferTx: %v", err)
+					continue
+				}
+
+				currentPeerStats[peerAddress] = PeerStats{
+					TransferRx: transferRx,
+					TransferTx: transferTx,
+				}
+
+				// Get previous stats
+				prevStats, exists := previousPeerStats[peerAddress]
+				if exists {
+					// Calculate traffic difference
+					traffic := (transferRx - prevStats.TransferRx) + (transferTx - prevStats.TransferTx)
+					peerTraffic[peerAddress] = PeerTraffic{
+						Time:    currentTime,
+						Traffic: traffic,
+					}
+				} else {
+					// No previous stats, cannot calculate traffic
+					peerTraffic[peerAddress] = PeerTraffic{
+						Time:    currentTime,
+						Traffic: 0,
+					}
+				}
+
+			}
+			// else if len(fields) == 5 {
+			// Interface line, can skip
+			// }
+		}
+
+		// Update previousPeerStats
+		previousPeerStats = currentPeerStats
+
+		// Create JSON data
+		jsonData, err := json.MarshalIndent(peerTraffic, "", "  ")
+		if err != nil {
+			log.Printf("Error marshaling JSON: %v", err)
+			continue
+		}
+
+		// Save JSON to file
+		err = ioutil.WriteFile("traffic.json", jsonData, 0644)
+		if err != nil {
+			log.Printf("Error writing JSON to file: %v", err)
+			continue
+		}
+		// Sleep for 1 hour
+		time.Sleep(3 * time.Minute)
+	}
 }
