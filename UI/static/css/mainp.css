@@ -1,119 +1,51 @@
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+    background-color: #FFF0F5;
+    font-family: 'Anonymous Pro', monospace;
+    margin: 0; /* Убираем отступы у body */
+}
+
+.bl_1 img {
+    min-width: 200px;
+    max-width: 350px;
+    width: 70%;
+}
+
+.bl_1 {
+    background-color: #e0f7fa;
+    min-height: 700px;
+
+}
+
+.bl_2 {
+    background-color: #c8e6c9;
+    min-height: 500px;
+}
+
+.bl_2 img {
+    min-width: 120px;
+    max-width: 200px;
+    width: 60%;
 }
 
 .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 50px 20px;
+    margin: 0; /* Убираем внешние отступы */
+    max-width: 100%; /* Контейнер растягивается на всю ширину */
 }
-
-.block {
-    height: 100vh;
-    transition: background-color 0.5s;
+.bl_3 {
+    background-color: #c9e79c;
+    height: 500px; /* Задайте высоту карты */
 }
-
-#block1 { background-color: #e0f7fa; } /* Синий блок */
-#block2 { background-color: #c8e6c9; } /* Зеленый блок */
-#block3 { background-color: #fffde7; } /* Блок с картой */
-#block4 { background-color: #ffffff; } /* Блок с товарами */
-
-.left, .right {
-    flex: 1;
-    padding: 20px;
-    text-align: center;
+.carousel-item{
+    margin: 0; /* Убираем внешние отступы */
+    max-width: 100%; /* Контейнер растягивается на всю ширину */
+    height: 200px;
 }
-
-.highlight-image {
-    opacity: 0.8;
-    width: 70%;
-    border-radius: 10px;
-    box-shadow: 0 0 0px rgba(0, 0, 0, 0.2);
+.carousel{
+    margin: 0; /* Убираем внешние отступы */
+    max-width: 100%; /* Контейнер растягивается на всю ширину */
+    padding: 0;
 }
-.middle-image{
-    width: 50%;
-}
-
-.benefits li {
-    font-size: 1.2em;
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
-}
-
-.benefits li span {
-    font-size: 1.5em;
-    margin-right: 10px;
-}
-
-h2 {
-    font-size: 2.5em;
-    color: #333;
-}
-
-.carousel {
-    display: flex;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding: 20px 0;
-}
-
-.item {
-    min-width: 300px;
-    margin-right: 20px;
-    padding: 20px;
-    background-color: #f1f1f1;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-#account-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 1000;
-    font-size: 1.1em;
-    backdrop-filter: blur(5px);
-    transition: opacity 0.3s;
-}
-
-#account-btn:hover {
-    opacity: 0.8;
-}
-
-/* Стиль для карты */
-#map {
-    width: 100%;
-    height: 100%;
-}
-
-.highlight-image-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-/* Центрирование контейнера */
-.container-center {
-    text-align: center;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Заголовок по центру */
-#block4 h2 {
-    font-size: 2.5em;
-    color: #333;
-    text-align: center;
-    margin-bottom: 30px;
+.bl4{
+    height:auto;
+    background: #7b89ff;
 }

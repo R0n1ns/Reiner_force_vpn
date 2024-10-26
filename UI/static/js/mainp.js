@@ -16,16 +16,16 @@ imageWrapper.addEventListener('mouseleave', () => {
     image.style.transform = `rotateY(0deg) rotateX(0deg)`; /* Возвращаем в исходное положение */
 });
 
-// Mapbox initialization
-mapboxgl.accessToken = 'pk.eyJ1Ijoicm9uaW4zNTQ2NTciLCJhIjoiY20wdXAxZG9nMTdtajJpczVkYnlhN2c0YiJ9.vAUFyu6IRiMEZSlhfDnj8A'; // Убедитесь, что вы используете действительный токен
+// Инициализация Mapbox
+mapboxgl.accessToken = 'pk.eyJ1Ijoicm9uaW4zNTQ2NTciLCJhIjoiY20wdXAxZG9nMTdtajJpczVkYnlhN2c0YiJ9.vAUFyu6IRiMEZSlhfDnj8A'; // Ваш токен Mapbox
 const map = new mapboxgl.Map({
     container: 'map', // контейнер для карты
     style: 'mapbox://styles/mapbox/streets-v11', // стиль карты
     center: [37.618423, 55.751244], // начальные координаты (центр Москвы)
-    zoom: 2 // начальный зум
+    zoom: 1 // начальный зум
 });
 
-// Добавление точек серверов (пример)
+// Добавление точек серверов
 const servers = [
     { coordinates: [37.618423, 55.751244], name: 'Москва' },
     { coordinates: [-0.1276, 51.5074], name: 'Лондон' },

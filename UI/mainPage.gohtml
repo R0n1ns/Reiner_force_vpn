@@ -2,81 +2,106 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reiner Force VPN</title>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
-    <link href="/static/css/mainp.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&display=swap" rel="stylesheet">
+    <link href="static/css/mainp.css" rel="stylesheet">
 
-</head>
 <body>
+<ul style="position: fixed; z-index: 1000;" class="nav nav-pills end-0">
+    <li style="width: 150px" class="nav-item p-1 text-center">
+        <a class="nav-link bg-white rounded-pill" aria-current="page" href="/authorization">Вход</a>
+    </li>
+</ul>
 
-<form action="/authorization" target="_blank">
-    <button  id="account-btn">Личный кабинет</button>
-</form>
-
-<section id="block1" class="block">
-    <div class="container">
-        <div class="left">
-            <div class="highlight-image-wrapper">
-                <img src="/static/media/лого.png" alt="VPN" class="highlight-image">
+<div id="main" class="container">
+    <div class="row align-items-center justify-content-center bl_1 ">
+        <div class="col highlight-image-wrapper">
+            <div>
+                <img src="./static/media/лого.png" alt="VPN" class="mx-auto d-block highlight-image">
             </div>
         </div>
-        <div class="right">
-            <h2>Почему Reiner Force VPN?</h2>
-            <ul class="benefits">
-                <li><span>🛡️</span> Высокая безопасность</li>
-                <li><span>⚡</span> Быстрая скорость соединения</li>
-                <li><span>🌍</span> Широкий выбор серверов по всему миру</li>
-                <li><span>🔒</span> Защита данных и конфиденциальность</li>
+        <div class="col">
+            <h1>Почему Reiner Force VPN?</h1>
+            <ul>
+                <li><h3><span>🛡️</span> Высокая безопасность</h3></li>
+                <li><h3><span>⚡</span> Быстрая скорость соединения</h3></li>
+                <li><h3><span>🌍</span> Широкий выбор серверов по всему миру</h3></li>
+                <li><h3><span>🔒</span> Защита данных и конфиденциальность</h3></li>
             </ul>
         </div>
     </div>
-</section>
+</div>
 
-<section id="block2" class="block">
-    <div class="container">
-        <div class="left">
-            <img src="/static/media/wireguard.png" alt="WireGuard" class="middle-image">
+<div id="protocols" class="container">
+    <div class="row bl_2 align-items-center ">
+        <div class="col  m-2 d-flex flex-column align-items-center text-center">
+            <img src="/static/media/wireguard.png" alt="WireGuard" class="m-2">
             <h2>WireGuard</h2>
             <ul class="benefits">
-                <li><span>🔐</span> Современный протокол безопасности</li>
-                <li><span>⚙️</span> Высокая производительность</li>
-                <li><span>📡</span> Низкие требования к ресурсам</li>
+                <li><h3><span>🔐</span> Современный протокол безопасности</h3></li>
+                <li><h3><span>⚙️</span> Высокая производительность</h3></li>
+                <li><h3><span>📡</span> Низкие требования к ресурсам</h3></li>
             </ul>
         </div>
-        <div class="right">
-            <img src="/static/media/shadow.png" alt="Shadowsocks" class="middle-image">
+        <div class="col d-flex flex-column align-items-center text-center">
+            <img src="/static/media/shadow.png" alt="Shadowsocks" class="m-2">
             <h2>Shadowsocks</h2>
             <ul class="benefits">
-                <li><span>🌐</span> Обход блокировок</li>
-                <li><span>📈</span> Быстрое подключение</li>
-                <li><span>🛠️</span> Легкая настройка</li>
+                <li><h3><span>🌐</span> Обход блокировок</h3></li>
+                <li><h3><span>📈</span> Быстрое подключение</h3></li>
+                <li><h3><span>🛠️</span> Легкая настройка</h3></li>
             </ul>
         </div>
     </div>
-</section>
-
-<section id="block3" class="block">
-    <div id="map"></div>
-</section>
+</div>
 
 
-<section id="block4" class="block">
-    <div class="container-center">
-        <h2>Наши предложения</h2>
-        <div class="carousel">
-            {{range .}}
-                <div class="item">
-                    <h3>{{.Name}}</h3>
-                    <p>Продожительность : {{.Term}} дней</p>
-                    <p>Цена : {{.Price}} рублей</p>
-                </div>
-            {{ end }}
+<div id="maps" class="container">
+    <div class="row bl_3 map" id="map">
+    </div>
+</div>
+
+
+<div id="prods" class="container bl4">
+    <div class="row align-items-center text-center" >
+        <h1>Наши предложения</h1>
+        <div id="carouselExampleIndicators" class="carousel" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+                {{range $index, $item := .}}
+                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="{{$index}}"{{ if eq $index 0 }} class="active" aria-current="true"{{end}} aria-label="Слайд {{$index}}"></button>
+                {{ end }}
+            </div>
+            <div class="carousel-inner">
+                {{range $index, $item := .}}
+                    <div class="carousel-item{{ if eq $index 0 }} active{{end}}">
+                        <h1 class="d-block">{{$item.Name}}</h1>
+                        <h4 class="d-block">Продолжительность: {{$item.Term}} дней</h4>
+                        <h4 class="d-block">Цена: {{$item.Price}} рублей</h4>
+                    </div>
+                {{ end }}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Предыдущий</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Следующий</span>
+            </button>
         </div>
     </div>
-</section>
+</div>
 
+
+
+<!-- Подключаем jQuery и Bootstrap JS -->
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="/static/js/mainp.js"></script>
 </body>
 </html>
