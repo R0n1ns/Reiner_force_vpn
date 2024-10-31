@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход</title>
     <style>
+        /* Стили */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
         }
-
         body {
             height: 100vh;
             display: flex;
@@ -19,7 +19,6 @@
             align-items: center;
             background-color: #f0f8ff;
         }
-
         .container {
             display: flex;
             justify-content: center;
@@ -27,7 +26,6 @@
             width: 100%;
             height: 100%;
         }
-
         .form {
             background-color: white;
             padding: 20px;
@@ -36,12 +34,10 @@
             text-align: center;
             width: 300px;
         }
-
         .form h2 {
-            color: #008080; /* темно-зеленый */
+            color: #008080;
             margin-bottom: 20px;
         }
-
         .form input {
             width: 100%;
             padding: 10px;
@@ -50,7 +46,6 @@
             border-radius: 5px;
             outline: none;
         }
-
         .form button {
             background-color: #008080;
             color: white;
@@ -61,40 +56,32 @@
             width: 100%;
             margin: 10px 0;
         }
-
         .form button:hover {
             background-color: #005f5f;
         }
-
         .error-message {
             color: red;
             font-size: 12px;
             margin-top: 10px;
         }
-
         .register-link {
             margin-top: 15px;
             font-size: 12px;
         }
-
         .register-link a {
-            color: #0000ff; /* синий */
+            color: #0000ff;
             text-decoration: none;
         }
-
         .register-link a:hover {
             text-decoration: underline;
         }
-
         #telegramLogin {
-            background-color: #0088cc; /* Цвет для Telegram */
+            background-color: #0088cc;
             border: none;
         }
-
         #telegramLogin:hover {
             background-color: #007ab8;
         }
-
     </style>
 </head>
 <body>
@@ -116,19 +103,13 @@
     document.getElementById("loginForm").addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        // Получаем данные из формы
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
         const errorMessage = document.getElementById("error-message");
 
-        // Пример данных для отправки
-        const data = {
-            email: email,
-            password: password
-        };
+        const data = { email, password };
 
         try {
-            // Отправляем запрос на сервер
             const response = await fetch("/login", {
                 method: "POST",
                 headers: {
@@ -137,27 +118,27 @@
                 body: JSON.stringify(data)
             });
 
+            if (response.status === 401) {
+                errorMessage.textContent = "Неверный email или пароль.";
+                return;
+            }
+
+            if (!response.ok) {
+                errorMessage.textContent = "Произошла ошибка на сервере.";
+                return;
+            }
+
             const result = await response.json();
 
-            // Если ответ успешен
-            if (result.success) {
-                // Перенаправление на страницу после успешного входа
-                window.location.href = "/dashboard";
-            } else {
-                // Вывод ошибки
-                errorMessage.textContent = "Вход не удался. Проверьте введенные данные.";
-            }
+            window.location.href = "/user/dashboard";
         } catch (error) {
-            // В случае ошибки в запросе
             errorMessage.textContent = "Произошла ошибка. Попробуйте снова.";
         }
     });
 
     document.getElementById("telegramLogin").addEventListener("click", function () {
-        // Перенаправление на страницу для входа через Telegram
         window.location.href = "/telegram-login";
     });
-
 </script>
 </body>
 </html>

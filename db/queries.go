@@ -66,6 +66,28 @@ func GetUsers() *[]User {
 	return &users
 }
 
+// получение пользователя
+func GetUser(mail string) (bool, User) {
+	var user User
+	res := db.Find(&user, "Mail = ?", mail)
+	if res.Error == nil {
+		return true, user
+	} else {
+		return false, User{}
+	}
+}
+
+// получение пользователя
+func GetUserUsername(usrname string) (bool, User) {
+	var user User
+	res := db.Find(&user, "UserName = ?", usrname)
+	if res.Error == nil {
+		return true, user
+	} else {
+		return false, User{}
+	}
+}
+
 //пполучение данных пользователя
 //изменения пользователя
 //изменения пароля пользователя

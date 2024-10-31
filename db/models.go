@@ -9,7 +9,8 @@ type User struct {
 	Tgid      uint     `gorm:"primaryKey;not null;unique"`               //ид тг для входа
 	Mail      string   `gorm:"default:'null'"`
 	Password  string   `gorm:"default:'null'"` //пароль
-	Isblocked bool     `gorm:"default:false"`  //заблокирован ли пользователь
+	UserName  string   `gorm:"not null;unique"`
+	Isblocked bool     `gorm:"default:false"` //заблокирован ли пользователь
 	Config    []Config `gorm:"foreignKey:Userid"`
 }
 
