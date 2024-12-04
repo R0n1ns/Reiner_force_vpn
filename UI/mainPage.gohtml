@@ -13,7 +13,7 @@
 <body>
 <ul style="position: fixed; z-index: 1000;" class="nav nav-pills end-0">
     <li style="width: 150px" class="nav-item p-1 text-center">
-        <a class="nav-link bg-white rounded-pill" aria-current="page" href="/authorization">Вход</a>
+        <a class="nav-link bg-white rounded-pill" aria-current="page" href="/user/authorization">Вход</a>
     </li>
 </ul>
 
@@ -79,11 +79,23 @@
                 {{range $index, $item := .}}
                     <div class="carousel-item{{ if eq $index 0 }} active{{end}}">
                         <h1 class="d-block">{{$item.Name}}</h1>
-                        <h4 class="d-block">Продолжительность: {{$item.Term}} дней</h4>
-                        <h4 class="d-block">Цена: {{$item.Price}} рублей</h4>
+                        <h4 class="d-block">Цена: {{$item.NowPrice}} рублей</h4>
+                        {{if gt $item.LastPrice 0}}
+                            <h5 class="text-muted">Старая цена: {{$item.LastPrice}} рублей</h5>
+                        {{end}}
+                        {{if $item.IsTerm}}
+                            <h4 class="d-block">Продолжительность: {{$item.Term}} дней</h4>
+                        {{end}}
+                        {{if $item.IsTraffic}}
+                            <h4 class="d-block">Трафик: {{$item.Traffic}} ГБ</h4>
+                        {{end}}
+                        {{if $item.IsOnSale}}
+                            <span class="badge bg-success">Акция</span>
+                        {{end}}
                     </div>
                 {{ end }}
             </div>
+
             <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Предыдущий</span>

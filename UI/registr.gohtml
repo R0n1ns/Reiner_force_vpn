@@ -38,7 +38,7 @@
         }
 
         .form h2 {
-            color: #008080; /* темно-зеленый */
+            color: #008080;
             margin-bottom: 20px;
         }
 
@@ -59,9 +59,15 @@
             border-radius: 5px;
             cursor: pointer;
             width: 100%;
+            margin-top: 10px;
         }
 
-        .form button:hover {
+        .form button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .form button:hover:not(:disabled) {
             background-color: #005f5f;
         }
 
@@ -75,14 +81,13 @@
             display: block;
             margin-top: 15px;
             font-size: 12px;
-            color: #0000ff; /* синий */
+            color: #0000ff;
             text-decoration: none;
         }
 
         .login-link:hover {
             text-decoration: underline;
         }
-
     </style>
 </head>
 <body>
@@ -91,53 +96,107 @@
         <h2>Регистрация</h2>
         <input type="email" id="email" placeholder="Введите email" required>
         <input type="password" id="password" placeholder="Введите пароль" required>
-        <button type="submit">Зарегистрироваться</button>
+        <button type="button" id="telegramButton" disabled>Подтвердить через Telegram</button>
+        <button type="button" id="registerButton" disabled>Завершить регистрацию</button>
         <p id="error-message" class="error-message"></p>
-        <a href="/authorization" class="login-link">Войти</a>
+        <a href="/user/authorization" class="login-link">Войти</a>
     </form>
 </div>
 
 <script>
-    document.getElementById("registrationForm").addEventListener("submit", async function (event) {
-        event.preventDefault();
+    let key = null; // Для хранения ключа подтверждения
 
-        // Получаем данные из формы
+    document.getElementById("email").addEventListener("input", function () {
+        const email = this.value;
+        const telegramButton = document.getElementById("telegramButton");
+
+        // Активируем кнопку Telegram, если email валидный
+        if (email.trim() !== "") {
+            telegramButton.disabled = false;
+        } else {
+            telegramButton.disabled = true;
+        }
+    });
+
+    document.getElementById("telegramButton").addEventListener("click", async function () {
+        const email = document.getElementById("email").value;
+        const errorMessage = document.getElementById("error-message");
+
+        try {
+            const response = await fetch("/generate-key", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }});
+
+            const result = await response.json();
+
+            if (result.success) {
+                const telegramLink = result.telegram_link;
+                key = result.key; // Сохраняем ключ
+
+                window.open(telegramLink, "_blank");
+
+                // Ожидание подтверждения
+                await checkKeyConfirmation(key);
+            } else {
+                errorMessage.textContent = result.message || "Ошибка при генерации ключа.";
+            }
+        } catch (error) {
+            errorMessage.textContent = "Ошибка сети. Попробуйте снова.";
+        }
+    });
+
+    async function checkKeyConfirmation(key) {
+        const errorMessage = document.getElementById("error-message");
+        const telegramButton = document.getElementById("telegramButton");
+        const registerButton = document.getElementById("registerButton");
+
+        try {
+            const interval = setInterval(async () => {
+                const response = await fetch(`/check-key?key=${key}`);
+                const result = await response.json();
+
+                if (result.confirmed) {
+                    clearInterval(interval);
+
+                    telegramButton.textContent = "Telegram подтвержден";
+                    telegramButton.style.backgroundColor = "green";
+                    telegramButton.disabled = true;
+                    registerButton.disabled = false;
+                }
+            }, 3000);
+        } catch (error) {
+            errorMessage.textContent = "Ошибка при проверке подтверждения.";
+        }
+    }
+
+    document.getElementById("registerButton").addEventListener("click", async function () {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
         const errorMessage = document.getElementById("error-message");
 
-        // Пример данных для отправки
-        const data = {
-            email: email,
-            password: password
-        };
+        if (!key) {
+            errorMessage.textContent = "Ключ не подтверждён.";
+            return;
+        }
 
         try {
-            // Отправляем запрос на сервер
-            const response = await fetch("/register", {
+            const response = await fetch("/finalize-registration", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data)
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, key })
             });
 
             const result = await response.json();
 
-            // Если ответ успешен
             if (result.success) {
-                // Перенаправление на страницу подтверждения Telegram
-                window.location.href = "/telegram-confirmation";
+                window.location.href = "/user/dashboard";
             } else {
-                // Вывод ошибки
-                errorMessage.textContent = "Регистрация не удалась. Проверьте введенные данные.";
+                errorMessage.textContent = result.message || "Ошибка при регистрации.";
             }
         } catch (error) {
-            // В случае ошибки в запросе
-            errorMessage.textContent = "Произошла ошибка. Попробуйте снова.";
+            errorMessage.textContent = "Ошибка сети. Попробуйте снова.";
         }
     });
-
 </script>
 </body>
 </html>

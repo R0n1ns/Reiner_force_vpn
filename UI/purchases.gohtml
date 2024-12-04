@@ -1,0 +1,33 @@
+{{ define "content" }}
+    <h1 class="mb-4">Мои тарифы</h1>
+    {{ if eq (len .UserPlans) 0 }}
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Нет активных тарифов</h4>
+            <p>Вы еще не приобрели ни одного тарифа. Переходите на <a href="/user/tariffs" class="alert-link">страницу покупки тарифов</a>, чтобы выбрать подходящий.</p>
+        </div>
+    {{ else }}
+        <div class="row">
+            {{ range .UserPlans }}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title">{{ .PlanName }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Статус:</strong> {{ .Status }}</p>
+                            <p><strong>Оставшийся трафик:</strong> {{ .RemainingTraffic }} GB</p>
+                            <p><strong>Дата истечения:</strong> {{ .ExpirationDate }}</p>
+                        </div>
+                        <div class="card-footer text-muted">
+                            {{ if .IsRenewable }}
+                                <button class="btn btn-sm btn-outline-primary">Продлить</button>
+                            {{ else }}
+                                <button class="btn btn-sm btn-outline-secondary" disabled>Не продлевается</button>
+                            {{ end }}
+                        </div>
+                    </div>
+                </div>
+            {{ end }}
+        </div>
+    {{ end }}
+{{ end }}

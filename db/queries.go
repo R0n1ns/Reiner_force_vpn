@@ -24,6 +24,7 @@ func init_() *gorm.DB {
 }
 
 var db = init_()
+var DB = db
 
 // миграция баз данных
 func Migrations() {
@@ -34,8 +35,8 @@ func Migrations() {
 
 	//выполнение миграций
 	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Products{})
-	db.AutoMigrate(&Config{})
+	db.AutoMigrate(&Product{})
+	db.AutoMigrate(&Sale{})
 
 	//отчет
 	log.Println("Миграции выполнены")
@@ -47,7 +48,7 @@ func Migrations() {
 func Adduser(user User) bool {
 	result := db.Create(&user) // pass pointer of data to Create
 	if result.Error == nil {
-		log.Println("Добавлен пользователь ", user.ID)
+		//log.Println("Добавлен пользователь ", user.ID)
 		return true
 	} else {
 		log.Println("Ошибка добавдение данных", result.Error)
@@ -77,15 +78,50 @@ func GetUser(mail string) (bool, User) {
 	}
 }
 
+func GetUserPlans(username string) ([]map[string]interface{}, error) {
+	var user User
+	if err := db.Where("user_name = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	var sales []Sale
+	if err := db.Preload("Product").Where("userid = ?", user.Id).Find(&sales).Error; err != nil {
+		return nil, err
+	}
+
+	// Преобразуем данные в формат для шаблона
+	userPlans := make([]map[string]interface{}, 0)
+	for _, sale := range sales {
+		plan := map[string]interface{}{
+			"PlanName":         sale.Product.Name,
+			"Status":           "Активен", // Логика проверки статуса
+			"RemainingTraffic": sale.RemainingTraffic,
+			"ExpirationDate":   sale.ExpirationDate.Format("02.01.2006"),
+			"IsRenewable":      !sale.ISFrozen,
+		}
+		userPlans = append(userPlans, plan)
+	}
+
+	return userPlans, nil
+}
+
 // получение пользователя
 func GetUserUsername(usrname string) (bool, User) {
 	var user User
-	res := db.Find(&user, "UserName = ?", usrname)
-	if res.Error == nil {
+	res := db.Where("user_name = ?", usrname).First(&user)
+	if res.RowsAffected > 0 {
 		return true, user
-	} else {
-		return false, User{}
 	}
+	return false, User{}
+}
+
+func GetUserByTelegramID(tgid int64) (bool, User) {
+	var user User
+	res := db.Where("tgid = ?", tgid).First(&user)
+	if res.RowsAffected > 0 {
+		return true, user
+	}
+	return false, User{}
 }
 
 //пполучение данных пользователя
@@ -94,7 +130,7 @@ func GetUserUsername(usrname string) (bool, User) {
 
 // -------------------------------- ТОВАРЫ --------------------------------
 // добовление новый товар
-func Addproduct(product Products) bool {
+func Addproduct(product Product) bool {
 	result := db.Create(&product)
 	if result.Error == nil {
 		log.Println("Добавлен товар ", product.ID)
@@ -106,19 +142,19 @@ func Addproduct(product Products) bool {
 }
 
 // Получение всех товаров
-func Getproducts() *[]Products {
-	var products []Products
+func Getproducts() *[]Product {
+	var products []Product
 	err := db.Find(&products)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
-		return &[]Products{}
+		return &[]Product{}
 	}
 	return &products
 }
 
 // изменение названия товара
 func UpdProductName(id uint, name string) bool {
-	var product = Products{Id: id}
+	var product = Product{Id: id}
 	err := db.First(&product)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
@@ -135,13 +171,13 @@ func UpdProductName(id uint, name string) bool {
 
 // изменение цены товара
 func UpdProductPrice(id, price uint) bool {
-	var product = Products{Id: id}
+	var product = Product{Id: id}
 	err := db.First(&product)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
 		return false
 	}
-	product.Price = price
+	product.NowPrice = price
 	err = db.Save(&product)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
@@ -152,7 +188,7 @@ func UpdProductPrice(id, price uint) bool {
 
 // изменение времени товара
 func UpdProductTerm(id, term uint) bool {
-	var product = Products{Id: id}
+	var product = Product{Id: id}
 	err := db.First(&product)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
@@ -169,7 +205,7 @@ func UpdProductTerm(id, term uint) bool {
 
 // Удаление товара
 func Dellproducts(id uint) bool {
-	err := db.Delete(&Products{}, id)
+	err := db.Delete(&Product{}, id)
 	if err.Error != nil {
 		log.Println("Ошибка получения продуктов", err)
 		return false

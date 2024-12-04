@@ -1,0 +1,40 @@
+{{ define "content" }}
+    <style>
+        .tariff-card {
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        .tariff-card:hover {
+            background-color: #e6ffe6; /* Бледно-зеленый */
+            transform: translateY(-5px); /* Плавный сдвиг вверх */
+        }
+    </style>
+
+    <div class="container mt-4" style="max-height: 80vh; overflow-y: auto;">
+        <div class="row">
+            <!-- Проверка, есть ли тарифы -->
+            {{ if eq (len .) 0 }}
+                <div class="col-12">
+                    <div class="alert alert-info" role="alert">
+                        <p>На данный момент тарифы по трафику отсутствуют.</p>
+                    </div>
+                </div>
+            {{ else }}
+                {{ range $index, $plan := . }}
+                    <div class="col-md-4 mb-4">
+                        <a href="/tariff/{{$plan.Id}}" class="text-decoration-none text-dark">
+                            <div class="card tariff-card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ $plan.Name }}</h5>
+                                    <p class="card-text"><strong>Продолжительность:</strong> {{ $plan.Term }} дней</p>
+                                    <p class="card-text"><strong>Трафик:</strong> {{ $plan.Traffic }} GB</p>
+                                    <p class="card-text"><strong>Цена:</strong> {{ $plan.NowPrice }} ₽</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {{ end }}
+            {{ end }}
+        </div>
+    </div>
+{{ end }}

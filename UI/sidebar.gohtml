@@ -34,6 +34,7 @@
             .icon-expand::before { content: "➡️"; }
             .icon-collapse::before { content: "⬅️"; }
             .icon-support::before { content: "🛠️"; }
+            .icon-logout-smile::before { content: "❌"}
 
             /* Main Content Style */
             .content {
@@ -45,6 +46,19 @@
             .full-height-container {
                 display: flex;
                 min-height: 100vh;
+                flex-direction: row;
+            }
+
+            /* Positioning the logout icon at the bottom */
+            .sidebar .nav-item.logout {
+                margin-top: auto; /* Push to the bottom */
+                text-align: center;
+            }
+            .sidebar .nav-item.logout .nav-link {
+                margin: 0 auto;
+                display: flex;
+                justify-content: center;
+                align-items: center;
             }
         </style>
     </head>
@@ -54,19 +68,19 @@
         <nav id="sidebar" class="bg-dark sidebar">
             <ul class="nav flex-column text-center">
                 <li class="nav-item mt-3">
-                    <a href="/dashboard" class="nav-link">
+                    <a href="/user/dashboard" class="nav-link">
                         <i class="icon-dashboard"></i>
                         <span class="nav-text d-none">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/plans" class="nav-link">
+                    <a href="/user/purchases" class="nav-link">
                         <i class="icon-plans"></i>
                         <span class="nav-text d-none">Мои тарифы</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/buy-plan" class="nav-link">
+                    <a href="/user/tariffs" class="nav-link">
                         <i class="icon-buy"></i>
                         <span class="nav-text d-none">Купить тариф</span>
                     </a>
@@ -83,6 +97,21 @@
                         <span class="nav-text d-none">Поддержка</span>
                     </a>
                 </li>
+                <li class="nav-item mt-auto mb-3">
+                    <a href="/logout" class="nav-link">
+                        <i class="icon-logout-smile"></i>
+                        <span class="nav-text d-none">Поддержка</span>
+                    </a>
+                </li>
+                <!-- Logout Button -->
+{{/*                <li class="nav-item logout">*/}}
+{{/*                    <form id="logout-form" action="/logout" method="POST">*/}}
+{{/*                        <button type="submit" class="nav-link" style="background-color: transparent; border: none; padding: 0;">*/}}
+{{/*                            <i class="icon-logout-smile"></i>*/}}
+{{/*                            <span class="nav-text d-none">Выход</span>*/}}
+{{/*                        </button>*/}}
+{{/*                    </form>*/}}
+{{/*                </li>*/}}
             </ul>
         </nav>
 
@@ -115,6 +144,29 @@
             // Toggle display for nav-text elements
             document.querySelectorAll('.nav-text').forEach(span => span.classList.toggle('d-none'));
         });
+
+        // Submit the logout form and redirect to /login
+        // document.getElementById('logout-form').addEventListener('submit', function(event) {
+        //     event.preventDefault();
+        //
+        //     // Send POST request via fetch
+        //     fetch('/logout', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        //         },
+        //         body: JSON.stringify({})
+        //     })
+        //         .then(response => {
+        //             if (response.ok) {
+        //                 // Redirect to /login after successful logout
+        //                 window.location.href = '/login';
+        //             } else {
+        //                 console.error('Logout failed');
+        //             }
+        //         });
+        // });
     </script>
     </body>
     </html>

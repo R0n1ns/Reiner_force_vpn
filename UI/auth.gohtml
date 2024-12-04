@@ -94,7 +94,7 @@
         <p id="error-message" class="error-message"></p>
         <button id="telegramLogin" type="button">Войти через Telegram</button>
         <p class="register-link">
-            Нет аккаунта? <a href="/registration">Зарегистрироваться</a>
+            Нет аккаунта? <a href="/user/registration">Зарегистрироваться</a>
         </p>
     </form>
 </div>
@@ -136,9 +136,72 @@
         }
     });
 
-    document.getElementById("telegramLogin").addEventListener("click", function () {
-        window.location.href = "/telegram-login";
+    // document.getElementById("telegramLogin").addEventListener("click", function () {
+    //     window.location.href = "/telegram-login";
+    // });
+
+    document.getElementById("telegramLogin").addEventListener("click", async function () {
+        const errorMessage = document.getElementById("error-message");
+
+        try {
+            const response = await fetch("/generate-key", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }});
+
+            const result = await response.json();
+
+            if (result.success) {
+                const telegramLink = result.telegram_link;
+                key = result.key; // Сохраняем ключ
+
+                window.open(telegramLink, "_blank");
+
+                // Ожидание подтверждения
+                await checkKeyConfirmation(key);
+            } else {
+                errorMessage.textContent = result.message || "Ошибка при генерации ключа.";
+            }
+        } catch (error) {
+            errorMessage.textContent = "Ошибка сети. Попробуйте снова.";
+        }
     });
+
+    async function checkKeyConfirmation(key) {
+        const errorMessage = document.getElementById("error-message");
+        const telegramButton = document.getElementById("telegramLogin");
+
+        try {
+            const interval = setInterval(async () => {
+                const response = await fetch(`/check-key?key=${key}`);
+                const result = await response.json();
+                console.log(result)
+                if (result.confirmed) {
+                    clearInterval(interval);
+
+                    const response = await fetch("/finalize-login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({  key })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        telegramButton.textContent = "Telegram подтвержден";
+                        telegramButton.style.backgroundColor = "green";
+                        telegramButton.disabled = true;
+                        window.location.href = "/user/dashboard";
+                    } else {
+                        errorMessage.textContent = result.message || "Ошибка при входе.";
+                    }
+                }
+            }, 3000);
+        } catch (error) {
+            errorMessage.textContent = "Ошибка при проверке подтверждения.";
+        }
+    }
+
+
 </script>
 </body>
 </html>
