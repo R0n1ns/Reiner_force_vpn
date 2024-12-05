@@ -8,6 +8,16 @@
             background-color: #e6ffe6; /* Бледно-зеленый */
             transform: translateY(-5px); /* Плавный сдвиг вверх */
         }
+
+        .sale-card {
+            background-color: #fff3cd; /* Желтый цвет для карточки на акции */
+            border-color: #ffeeba; /* Светло-желтая граница */
+        }
+
+        .old-price {
+            text-decoration: line-through; /* Перечеркивание прошлой цены */
+            color: #6c757d; /* Темно-серый цвет для перечеркнутой цены */
+        }
     </style>
 
     <div class="container mt-4" style="max-height: 80vh; overflow-y: auto;">
@@ -22,13 +32,21 @@
             {{ else }}
                 {{ range $index, $plan := . }}
                     <div class="col-md-4 mb-4">
-                        <a href="/tariff/{{$plan.Id}}" class="text-decoration-none text-dark">
-                            <div class="card tariff-card shadow-sm h-100">
+                        <a href="/user/tariff/{{$plan.Id}}" class="text-decoration-none text-dark">
+                            <div class="card tariff-card shadow-sm h-100 {{ if $plan.IsOnSale }} sale-card {{ end }}">
                                 <div class="card-body">
                                     <h5 class="card-title">{{ $plan.Name }}</h5>
                                     <p class="card-text"><strong>Продолжительность:</strong> {{ $plan.Term }} дней</p>
                                     <p class="card-text"><strong>Трафик:</strong> {{ $plan.Traffic }} GB</p>
-                                    <p class="card-text"><strong>Цена:</strong> {{ $plan.NowPrice }} ₽</p>
+                                    <p class="card-text">
+                                        <strong>Цена:</strong>
+                                        {{ if $plan.IsOnSale }}
+                                            <span class="old-price">{{ $plan.LastPrice }} ₽</span>
+                                            <span>{{ $plan.NowPrice }} ₽</span>
+                                        {{ else }}
+                                            <span>{{ $plan.NowPrice }} ₽</span>
+                                        {{ end }}
+                                    </p>
                                 </div>
                             </div>
                         </a>

@@ -1,0 +1,98 @@
+{{ define "content" }}
+
+    <style>
+        .payment-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+        .payment-title {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .product-info {
+            margin-bottom: 1rem;
+        }
+        .payment-methods {
+            margin-top: 1.5rem;
+        }
+        .payment-actions {
+            display: none;
+            margin-top: 2rem;
+            text-align: center;
+        }
+    </style>
+
+    <div class="payment-container">
+        <h1 class="payment-title">Оплата тарифа</h1>
+
+        <div class="product-info">
+            {{ if .Name }}<p><strong>Название тарифа:</strong> {{ .Name }}</p>{{ end }}
+            {{ if .NowPrice }}<p><strong>Текущая цена:</strong> {{ .NowPrice }} руб.</p>{{ end }}
+            {{ if .LastPrice }}<p><strong>Старая цена:</strong> {{ .LastPrice }} руб.</p>{{ end }}
+            {{ if .IsOnSale }}<p><strong>Скидка:</strong> Действует скидка!</p>{{ end }}
+            {{ if .IsTerm }}<p><strong>Срок действия:</strong> {{ .Term }} дней</p>{{ end }}
+            {{ if .IsTraffic }}<p><strong>Трафик:</strong> {{ .Traffic }} ГБ</p>{{ end }}
+        </div>
+
+        <h3 id="payment-methods">Выберите способ оплаты:</h3>
+        <form id="payment-form" onsubmit="event.preventDefault(); initiatePayment();">
+            <input type="hidden" id="product_id" name="product_id" value="{{ .Id }}">
+            <div class="payment-methods" id="payment-methods">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="payment_method" id="creditCard" value="ymoney" required>
+                    <label class="form-check-label" for="creditCard">Yoomoney и карты</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="payment_method" id="bankTransfer" value="test">
+                    <label class="form-check-label" for="bankTransfer">Тестовый платеж</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">Оплатить</button>
+        </form>
+
+        <div id="payment-actions" class="payment-actions">
+            <p><strong>Ожидание оплаты...</strong></p>
+            <a id="payment-link" href="#" class="btn btn-secondary" style="display: none; " target="_blank">Перейти к оплате</a>
+            <form action="/user/confirm-payment" method="POST" style="margin-top: 1rem;">
+                <input type="hidden" name="product_id" value="{{ .Id }}">
+                <button type="submit" class="btn btn-success">Подтвердить оплату</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        async function initiatePayment() {
+            const productId = document.getElementById('product_id').value;
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+            try {
+                const response = await fetch(`/user/redirect-payment?product_id=${productId}&payment_method=${paymentMethod}`);
+                const data = await response.json();
+                console.log(data)
+                if (data.payment_link) {
+                    document.getElementById('payment-link').href = data.payment_link;
+                    document.getElementById('payment-link').style.display = 'inline';
+                }
+
+                document.getElementById('payment-methods').style.display = 'none';
+                document.getElementById('payment-actions').style.display = 'block';
+            } catch (error) {
+                console.error('Error initiating payment:', error);
+                alert('Произошла ошибка при создании ссылки на оплату.');
+            }
+        }
+
+        function redirectToPayment() {
+            const paymentLink = document.getElementById('payment-link').href;
+            if (paymentLink) {
+                window.location.href = paymentLink;
+            } else {
+                alert('Ссылка на оплату недоступна.');
+            }
+        }
+    </script>
+{{ end }}

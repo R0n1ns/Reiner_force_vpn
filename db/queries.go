@@ -1,11 +1,13 @@
 package db
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 	"os"
+	"time"
 )
 
 func init_() *gorm.DB {
@@ -140,6 +142,14 @@ func Addproduct(product Product) bool {
 		return false
 	}
 }
+func CountProductsOnSale() (int64, error) {
+	var count int64
+	// Выполняем запрос, чтобы посчитать количество продуктов на акции
+	if err := db.Model(&Product{}).Where("is_on_sale = ?", true).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
 
 // Получение всех товаров
 func Getproducts() *[]Product {
@@ -150,6 +160,92 @@ func Getproducts() *[]Product {
 		return &[]Product{}
 	}
 	return &products
+}
+
+// Получение всех товаров
+func GetProductId(id int) (bool, *Product) {
+	var product Product
+	res := db.Where("id = ?", id).First(&product)
+	if res.RowsAffected > 0 {
+		return true, &product
+	}
+	return false, &product
+}
+
+func AddProductToUser(username string, productId string) (bool, *Sale, error) {
+	var user User
+	var product Product
+
+	// Находим пользователя по UserName
+	if res := db.Where("user_name = ?", username).First(&user); res.RowsAffected == 0 {
+		return false, nil, fmt.Errorf("пользователь не найден")
+	}
+
+	// Находим продукт по ProductId
+	if res := db.Where("id = ?", productId).First(&product); res.RowsAffected == 0 {
+		return false, nil, fmt.Errorf("продукт не найден")
+	}
+
+	// Создаем запись о покупке
+	sale := Sale{
+		Userid:    user.Id,
+		Productid: product.Id,
+	}
+
+	// Если продукт имеет ограничение по трафику, добавляем оставшийся трафик
+	if product.IsTraffic {
+		sale.RemainingTraffic = float32(product.Traffic) // добавляем оставшийся трафик
+	}
+
+	// Если продукт имеет срок действия, устанавливаем дату окончания действия
+	if product.IsTerm {
+		// Предположим, что срок действия продукта — это количество дней от текущей даты
+		sale.ExpirationDate = time.Now().Add(time.Duration(product.Term) * 24 * time.Hour)
+	}
+
+	// Сохраняем запись о покупке
+	if res := db.Create(&sale); res.Error != nil {
+		return false, nil, res.Error
+	}
+
+	return true, &sale, nil
+}
+
+func GetUserStatistics(username string) (float32, time.Time, int, error) {
+	var user User
+	var sales []Sale
+
+	// Находим пользователя по UserName
+	if res := db.Where("user_name = ?", username).First(&user); res.RowsAffected == 0 {
+		return 0, time.Time{}, 0, fmt.Errorf("пользователь не найден")
+	}
+
+	// Получаем все активированные тарифы пользователя
+	if res := db.Where("userid = ?", user.Id).Find(&sales); res.Error != nil {
+		return 0, time.Time{}, 0, res.Error
+	}
+
+	// Переменные для подсчета
+	var totalTraffic float32
+	var latestExpiration time.Time
+	var activatedCount int
+
+	// Перебираем все покупки пользователя
+	for _, sale := range sales {
+		// Добавляем оставшийся трафик
+		totalTraffic += sale.RemainingTraffic
+
+		// Находим самую позднюю дату истечения тарифа
+		if sale.ExpirationDate.After(latestExpiration) {
+			latestExpiration = sale.ExpirationDate
+		}
+
+		// Считаем количество активированных тарифов
+		activatedCount++
+	}
+
+	// Возвращаем результаты
+	return totalTraffic, latestExpiration, activatedCount, nil
 }
 
 // изменение названия товара

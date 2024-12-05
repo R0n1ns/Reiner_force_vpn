@@ -1,0 +1,61 @@
+{{ define "content" }}
+        <style>
+            .faq-container {
+                padding: 1rem;
+            }
+            .faq-item {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            .faq-item:hover {
+                background: #e9ecef;
+            }
+            .faq-question {
+                padding: 1rem;
+                font-weight: bold;
+            }
+            .faq-answer {
+                display: none;
+                padding: 1rem;
+                background: #ffffff;
+                border-top: 1px solid #dee2e6;
+            }
+            .faq-item.open .faq-answer {
+                display: block;
+            }
+        </style>
+        <div class="faq-container">
+        <div class="faq-item">
+            <div class="faq-question">Как оплатить тариф?</div>
+            <div class="faq-answer">О плата происходит с помощью карточки на сервисе Юмани, насваем через голубиную почту или захизром.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Как связаться с поддержкой?</div>
+            <div class="faq-answer">Не надо ни кого связывать, мы сами вас найдем.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Как зовут разработчиков?</div>
+            <div class="faq-answer">Шахбанова Зайнад брат</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Что делать если не работает сервис?</div>
+            <div class="faq-answer">Перезагрузить сервис ,если не помогло ,то молиться и биться головой об роутер.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Как устроиться на работу к нам?</div>
+            <div class="faq-answer">Устроится на работу можно <a href="https://contract.gosuslugi.ru/">https://contract.gosuslugi.ru/</a></div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.faq-item').forEach(item => {
+            item.addEventListener('click', () => {
+                item.classList.toggle('open');
+            });
+        });
+    </script>
+{{ end }}

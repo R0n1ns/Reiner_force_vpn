@@ -22,6 +22,7 @@ func basicRoutes(app *fiber.App) {
 	app.Post("/finalize-registration", UX.FinalizeRegistration)
 	app.Post("/finalize-login", UX.FinalizeLogin)
 	app.Get("/logout", UX.Logout)
+	app.Get("/support", UX.FAQ)
 
 }
 
@@ -33,6 +34,13 @@ func userPages(app *fiber.App) {
 	userPages.Get("/dashboard", UX.Dashboard)
 	userPages.Get("/tariffs", UX.Tariffs)
 	userPages.Get("/purchases", UX.Purchases)
+	userPages.Get("/tariff/:id", UX.PaymentPage)
+	// Route to redirect to payment
+	userPages.Get("/redirect-payment", UX.RedirectToPayment)
+	// Route to confirm payment
+	userPages.Post("/confirm-payment", UX.ConfirmPayment)
+	// Route to finalize the purchase
+	userPages.Get("/sale", UX.FinalizeSale)
 	userPages.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join([]string{"http://localhost:8080", "http://localhost:8080"}, ","),
 		AllowCredentials: true,
