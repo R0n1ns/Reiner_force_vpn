@@ -4,10 +4,12 @@ import (
 	"Project/db"
 	"bytes"
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"html/template"
 	"log"
+	"os"
 	"strconv"
 )
 
@@ -96,6 +98,7 @@ func Tariffs(c *fiber.Ctx) error {
 	return c.Type("html").Send(buf.Bytes())
 }
 
+// Обработчик страницы тарифов
 func Purchases(c *fiber.Ctx) error {
 	status, username := Restricted(c) // Проверка авторизации
 
@@ -103,13 +106,19 @@ func Purchases(c *fiber.Ctx) error {
 		return Auth(c) // Если пользователь не авторизован, перенаправляем
 	}
 
+	// Получаем пользователя по имени
+	found, _ := db.GetUserUsername(username)
+	if !found {
+		log.Println("Пользователь не найден")
+		return c.Status(fiber.StatusNotFound).SendString("Пользователь не найден")
+	}
+
 	// Получаем список тарифов пользователя
-	userPlans, err := db.GetUserPlans(username)
+	userPlans, err := db.GetUserPlans(username) // Вызов функции получения тарифов
 	if err != nil {
 		log.Println("Ошибка получения тарифов:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
-
 	// Загружаем и парсим основной шаблон и шаблон контента
 	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/purchases.gohtml")
 	if err != nil {
@@ -117,7 +126,7 @@ func Purchases(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 
-	// Если тарифов нет, передаем пустой список
+	// Передаём данные в шаблон
 	data := map[string]interface{}{
 		"UserPlans": userPlans,
 	}
@@ -130,6 +139,69 @@ func Purchases(c *fiber.Ctx) error {
 	}
 
 	return c.Type("html").Send(buf.Bytes())
+}
+
+// Обработчик для отправки конфигурации в Telegram
+func SendConfig(c *fiber.Ctx) error {
+	// Получаем ID тарифа из параметров запроса
+	saleID := c.Params("id")
+	var sale db.Sale
+
+	// Ищем покупку по ID
+	res := db.DB.Where("id = ?", saleID).First(&sale)
+	if res.RowsAffected == 0 {
+		log.Println("Покупка не найдена")
+		return c.Status(fiber.StatusNotFound).SendString("Покупка не найдена")
+	}
+
+	// Получаем пользователя, связанного с покупкой
+	var user db.User
+	res = db.DB.Where("id = ?", sale.Userid).First(&user)
+	if res.RowsAffected == 0 {
+		log.Println("Пользователь не найден")
+		return c.Status(fiber.StatusNotFound).SendString("Пользователь не найден")
+	}
+
+	//log.Println(user)
+	// Отправка сообщения в Telegram
+	message := sale.Config
+	//log.Println(message)
+	err := SendTelegramConfFile(user.Tgid, "Ваша конфигурация:\n", message)
+	if err != nil {
+		log.Println("Ошибка отправки сообщения в Telegram:", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Ошибка отправки сообщения в Telegram")
+	}
+
+	return c.SendString("Конфигурация успешно отправлена в Telegram")
+}
+
+// Функция отправки текстового файла с расширением .conf в Telegram
+func SendTelegramConfFile(tgid uint, fileName string, fileContent string) error {
+	// Создаем временный файл с содержимым
+	tempFile, err := os.CreateTemp("", "*.conf")
+	if err != nil {
+		return fmt.Errorf("ошибка создания временного файла: %w", err)
+	}
+	defer os.Remove(tempFile.Name()) // Удаляем временный файл после отправки
+
+	// Записываем содержимое в файл
+	if _, err := tempFile.WriteString(fileContent); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("ошибка записи в файл: %w", err)
+	}
+	tempFile.Close()
+	//log.Print("tgid")
+	//log.Println(tgid)
+	// Создаем объект для отправки файла в Telegram
+	document := tgbotapi.NewDocument(int64(tgid), tgbotapi.FilePath(tempFile.Name()))
+	document.Caption = fileName
+
+	// Отправляем файл через Telegram API
+	if _, err := TelegramBot.Send(document); err != nil {
+		return fmt.Errorf("ошибка отправки файла: %w", err)
+	}
+
+	return nil
 }
 
 // Функция для отображения FAQ
@@ -213,7 +285,7 @@ func RedirectToPayment(c *fiber.Ctx) error {
 	} else if payment_method == "ymoney" {
 		paymentLink = "https://example.com/payment?product_id=" + productID
 	}
-	log.Println(payment_method)
+	//log.Println(payment_method)
 
 	// Генерация ссылки оплаты
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"payment_link": paymentLink})
@@ -227,7 +299,7 @@ func ConfirmPayment(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Product ID is required")
 	}
 	// Mock проверка оплаты
-	log.Printf("Payment confirmed for product ID: %s\n", productID)
+	//log.Printf("Payment confirmed for product ID: %s\n", productID)
 
 	// Перенаправление на страницу завершения покупки
 	return c.Redirect("/user/sale?product_id=" + productID)
@@ -241,13 +313,16 @@ func FinalizeSale(c *fiber.Ctx) error {
 	if productID == "" || username == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Product ID and username are required")
 	}
-	err, _, _ := db.AddProductToUser(username, productID)
+	_, user := db.GetUserUsername(username)
+	err, sale, _ := db.AddProductToUser(username, productID)
 	if !err {
 		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
 	}
-
+	_, conf, _ := AddConf(int(sale.Id))
+	SendTelegramConfFile(user.Tgid, "config.conf", conf)
+	db.AddConfigBySaleID(sale.Id, conf)
 	// Mock обработка завершения покупки
-	log.Printf("Sale finalized for product ID: %s by user: %s\n", productID, username)
+	//log.Printf("Sale finalized for product ID: %s by user: %s\n", productID, username)
 
 	return c.Redirect("/user/purchases")
 }

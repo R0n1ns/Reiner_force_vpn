@@ -537,105 +537,92 @@ func (wg *WireGuardConfig) DropWireguard() {
 //	}
 //
 // Структура для хранения выходных данных команды wg-json
+
 type PeerStats struct {
 	TransferRx uint64
 	TransferTx uint64
 }
 
 type PeerTraffic struct {
-	Time    string `json:"time"`
-	Traffic uint64 `json:"traffic"`
+	TrafficRx uint64 `json:"traffic_rx"`
+	TrafficTx uint64 `json:"traffic_tx"`
 }
 
-func (wg *WireGuardConfig) CollectTraffic() {
-	previousPeerStats := make(map[string]PeerStats)
-	for {
-		// Run 'wg show all dump'
-		cmd := exec.Command("wg", "show", "all", "dump")
-		output, err := cmd.Output()
+// Сбор трафика, возвращает map[id]PeerTraffic
+func (wg *WireGuardConfig) CollectTraffic() (map[string]PeerTraffic, error) {
+	cmd := exec.Command("wg", "show")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute wg show: %v", err)
+	}
 
-		if err != nil {
-			log.Printf("Error running wg command: %v", err)
-			continue
-		}
+	output := out.String()
+	lines := strings.Split(output, "\n")
 
-		// Split output into lines
-		lines := strings.Split(string(output), "\n")
+	trafficData := make(map[string]PeerTraffic)
 
-		currentPeerStats := make(map[string]PeerStats)
-		peerTraffic := make(map[string]PeerTraffic)
-		currentTime := time.Now().Format(time.RFC3339)
-
-		// Process each line
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line == "" {
+	var currentPeer string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "peer:") {
+			currentPeer = strings.TrimSpace(strings.TrimPrefix(line, "peer:"))
+		} else if strings.HasPrefix(line, "transfer:") && currentPeer != "" {
+			// Пример: "transfer: 3.48 MiB received, 33.46 MiB sent"
+			transferParts := strings.Split(line, ",")
+			if len(transferParts) != 2 {
 				continue
 			}
-			fields := strings.Split(line, "\t")
-			if len(fields) == 9 {
-				// This is a peer line
-				// Fields: interface, public-key, preshared-key, endpoint, allowed-ips, latest-handshake, transfer-rx, transfer-tx, persistent-keepalive
-				peerAddress := fields[3] // Using 'endpoint' as the peer address
-				transferRxStr := fields[6]
-				transferTxStr := fields[7]
 
-				transferRx, err := strconv.ParseUint(transferRxStr, 10, 64)
-				if err != nil {
-					log.Printf("Error parsing transferRx: %v", err)
-					continue
-				}
-				transferTx, err := strconv.ParseUint(transferTxStr, 10, 64)
-				if err != nil {
-					log.Printf("Error parsing transferTx: %v", err)
-					continue
-				}
+			rxStr := strings.TrimSpace(strings.TrimPrefix(transferParts[0], "transfer:"))
+			txStr := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(transferParts[1], ""), "sent"))
 
-				currentPeerStats[peerAddress] = PeerStats{
-					TransferRx: transferRx,
-					TransferTx: transferTx,
-				}
-
-				// Get previous stats
-				prevStats, exists := previousPeerStats[peerAddress]
-				if exists {
-					// Calculate traffic difference
-					traffic := (transferRx - prevStats.TransferRx) + (transferTx - prevStats.TransferTx)
-					peerTraffic[peerAddress] = PeerTraffic{
-						Time:    currentTime,
-						Traffic: traffic,
-					}
-				} else {
-					// No previous stats, cannot calculate traffic
-					peerTraffic[peerAddress] = PeerTraffic{
-						Time:    currentTime,
-						Traffic: 0,
-					}
-				}
-
+			rxBytes, err := parseTraffic(rxStr)
+			if err != nil {
+				log.Printf("Error parsing transfer Rx for peer %s: %v", currentPeer, err)
+				continue
 			}
-			// else if len(fields) == 5 {
-			// Interface line, can skip
-			// }
-		}
 
-		// Update previousPeerStats
-		previousPeerStats = currentPeerStats
+			txBytes, err := parseTraffic(txStr)
+			if err != nil {
+				log.Printf("Error parsing transfer Tx for peer %s: %v", currentPeer, err)
+				continue
+			}
 
-		// Create JSON data
-		jsonData, err := json.MarshalIndent(peerTraffic, "", "  ")
-		if err != nil {
-			log.Printf("Error marshaling JSON: %v", err)
-			continue
+			trafficData[currentPeer] = PeerTraffic{
+				TrafficRx: rxBytes,
+				TrafficTx: txBytes,
+			}
 		}
+	}
 
-		// Save JSON to file
-		err = ioutil.WriteFile("traffic.json", jsonData, 0644)
-		if err != nil {
-			log.Printf("Error writing JSON to file: %v", err)
-			continue
-		}
-		// Sleep for 1 hour
-		time.Sleep(3 * time.Minute)
+	return trafficData, nil
+}
+
+// parseTraffic преобразует строку трафика (например, "3.48 MiB") в байты
+func parseTraffic(trafficStr string) (uint64, error) {
+	parts := strings.Fields(trafficStr)
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid traffic format: %s", trafficStr)
+	}
+
+	value, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse traffic value: %v", err)
+	}
+
+	unit := parts[1]
+	switch unit {
+	case "B":
+		return uint64(value), nil
+	case "KiB":
+		return uint64(value * 1024), nil
+	case "MiB":
+		return uint64(value * 1024 * 1024), nil
+	case "GiB":
+		return uint64(value * 1024 * 1024 * 1024), nil
+	default:
+		return 0, fmt.Errorf("unknown traffic unit: %s", unit)
 	}
 }

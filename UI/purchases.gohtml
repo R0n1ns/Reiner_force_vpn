@@ -17,11 +17,38 @@
                             <p><strong>Статус:</strong> {{ .Status }}</p>
                             <p><strong>Оставшийся трафик:</strong> {{ .RemainingTraffic }} GB</p>
                             <p><strong>Дата истечения:</strong> {{ .ExpirationDate }}</p>
+                            <button type="button" class="btn btn-secondary mt-3 send-config-btn" data-plan-id="{{ .Id }}">
+                                Отправить конфигурацию
+                            </button>
                         </div>
-
                     </div>
                 </div>
             {{ end }}
         </div>
     {{ end }}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const buttons = document.querySelectorAll('.send-config-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const planId = this.getAttribute('data-plan-id');
+                    fetch(`/user/send-config/${planId}`, {
+                        method: 'POST',
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                alert('Конфигурация успешно отправлена в Telegram!');
+                            } else {
+                                alert('Ошибка при отправке конфигурации. Попробуйте снова.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка запроса:', error);
+                            alert('Ошибка при отправке конфигурации.');
+                        });
+                });
+            });
+        });
+    </script>
 {{ end }}

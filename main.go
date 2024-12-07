@@ -2,6 +2,8 @@ package main
 
 import (
 	"Project/UX"
+	"fmt"
+	"github.com/go-co-op/gocron"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -9,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"strings"
+	"time"
 )
 
 // базовые пути сайта
@@ -41,6 +44,8 @@ func userPages(app *fiber.App) {
 	userPages.Post("/confirm-payment", UX.ConfirmPayment)
 	// Route to finalize the purchase
 	userPages.Get("/sale", UX.FinalizeSale)
+	userPages.Post("/send-config/:id", UX.SendConfig)
+
 	userPages.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join([]string{"http://localhost:8080", "http://localhost:8080"}, ","),
 		AllowCredentials: true,
@@ -51,6 +56,14 @@ func userPages(app *fiber.App) {
 }
 
 func main() {
+	defer func() {
+		err := UX.Wg_client.SaveToFile(UX.Filename)
+		if err != nil {
+			fmt.Printf("Ошибка при сохранении файла: %v", err)
+		} else {
+			fmt.Println("Конфигурация успешно сохранена.")
+		}
+	}()
 	app := fiber.New(fiber.Config{})
 	//db.Migrations()
 	app.Use(logger.New())   // Логирование запросов
@@ -67,6 +80,13 @@ func main() {
 			log.Fatalf("Ошибка запуска Telegram бота: %v", err)
 		}
 	}()
-
+	go func() {
+		// Запуск планировщика
+		s := gocron.NewScheduler(time.UTC)
+		s.Every(1).Hour().Do(func() {
+			UX.UpdateTraffic()
+		})
+		s.StartBlocking()
+	}()
 	app.Listen(":8080") //что слушать
 }

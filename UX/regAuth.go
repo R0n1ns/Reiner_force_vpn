@@ -15,6 +15,55 @@ import (
 	"time"
 )
 
+var (
+	telegramBotToken = "7767402806:AAFpWS_2UFWfOFri6sG6fva4bKxh-cs-Jos"
+	BotUsername      string
+)
+var TelegramBot = &tgbotapi.BotAPI{}
+
+var (
+	temporaryKeys       = make(map[string]int64) // Хранилище ключей подтверждения и их tgid
+	temporaryKeysStatus = make(map[string]bool)  // Хранилище статуса подтверждения ключей
+)
+
+// ----------------------- Telegram Bot -----------------------
+
+func RunTelegramBot() error {
+	var err error
+	TelegramBot, err = tgbotapi.NewBotAPI(telegramBotToken)
+	if err != nil {
+		log.Printf("Ошибка авторизации Telegram бота: %v", err)
+		return err
+	}
+
+	BotUsername = TelegramBot.Self.UserName
+	log.Printf("Telegram бот авторизован как %s", BotUsername)
+
+	updates := TelegramBot.GetUpdatesChan(tgbotapi.NewUpdate(0))
+
+	for update := range updates {
+		if update.Message != nil && update.Message.Command() == "start" {
+			handleTelegramStart(TelegramBot, update)
+		}
+	}
+	return nil
+}
+func handleTelegramStart(telegramBot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	key := update.Message.CommandArguments()
+	tgid := update.Message.Chat.ID
+
+	if _, exists := temporaryKeys[key]; !exists {
+		tgbotapi.NewMessage(tgid, "Ошибка: неверный или истёкший ключ.")
+		return
+	}
+
+	temporaryKeys[key] = tgid
+	temporaryKeysStatus[key] = true
+
+	msg := tgbotapi.NewMessage(tgid, "Код Подтвержден!")
+	telegramBot.Send(msg)
+}
+
 // ----------------------- регистрация -----------------------
 // страница регистрации
 func Reg(c *fiber.Ctx) error {
@@ -40,58 +89,10 @@ func Reg(c *fiber.Ctx) error {
 //
 //}
 
-var (
-	telegramBotToken    = "7767402806:AAFpWS_2UFWfOFri6sG6fva4bKxh-cs-Jos"
-	BotUsername         string
-	temporaryKeys       = make(map[string]int64) // Хранилище ключей подтверждения и их tgid
-	temporaryKeysStatus = make(map[string]bool)  // Хранилище статуса подтверждения ключей
-)
-var TelegramBot = &tgbotapi.BotAPI{}
-
-// ----------------------- Telegram Bot -----------------------
-
-func RunTelegramBot() error {
-	var err error
-	TelegramBot, err = tgbotapi.NewBotAPI(telegramBotToken)
-	if err != nil {
-		log.Printf("Ошибка авторизации Telegram бота: %v", err)
-		return err
-	}
-
-	BotUsername = TelegramBot.Self.UserName
-	log.Printf("Telegram бот авторизован как %s", BotUsername)
-
-	updates := TelegramBot.GetUpdatesChan(tgbotapi.NewUpdate(0))
-
-	for update := range updates {
-		if update.Message != nil && update.Message.Command() == "start" {
-			handleTelegramStart(TelegramBot, update)
-		}
-	}
-	return nil
-}
-
-func handleTelegramStart(telegramBot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	key := update.Message.CommandArguments()
-	tgid := update.Message.Chat.ID
-
-	if _, exists := temporaryKeys[key]; !exists {
-		tgbotapi.NewMessage(tgid, "Ошибка: неверный или истёкший ключ.")
-		return
-	}
-
-	temporaryKeys[key] = tgid
-	temporaryKeysStatus[key] = true
-
-	msg := tgbotapi.NewMessage(tgid, "Код Подтвержден!")
-	telegramBot.Send(msg)
-}
-
 func GenerateKey(c *fiber.Ctx) error {
 
 	// Генерация уникального ключа для подтверждения
 	key := fmt.Sprintf("%d", time.Now().UnixNano())
-
 	// Временное сохранение ключа и статуса
 	temporaryKeys[key] = 0 // Телеграм ID будет обновлён при подтверждении
 	temporaryKeysStatus[key] = false
@@ -298,7 +299,7 @@ func FinalizeLogin(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Аккаунта с таким id не существует"})
 	}
-	fmt.Println("логин пройден")
+	//fmt.Println("логин пройден")
 
 	msg := tgbotapi.NewMessage(tgid, "Успешное подтверждение авторизации!\nПерейдите обратно на страницу.")
 	if _, err := TelegramBot.Send(msg); err != nil {

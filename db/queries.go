@@ -33,11 +33,11 @@ func Migrations() {
 	//снос таблиц
 	//db.Migrator().DropTable(&User{})
 	//db.Migrator().DropTable(&Products{})
-	//db.Migrator().DropTable(&Config{})
+	db.Migrator().DropTable(&Sale{})
 
 	//выполнение миграций
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Product{})
+	//db.AutoMigrate(&User{})
+	//db.AutoMigrate(&Product{})
 	db.AutoMigrate(&Sale{})
 
 	//отчет
@@ -95,11 +95,13 @@ func GetUserPlans(username string) ([]map[string]interface{}, error) {
 	userPlans := make([]map[string]interface{}, 0)
 	for _, sale := range sales {
 		plan := map[string]interface{}{
+			"Id":               sale.Id,
 			"PlanName":         sale.Product.Name,
 			"Status":           "Активен", // Логика проверки статуса
 			"RemainingTraffic": sale.RemainingTraffic,
 			"ExpirationDate":   sale.ExpirationDate.Format("02.01.2006"),
 			"IsRenewable":      !sale.ISFrozen,
+			"Config":           sale.Config, // Добавляем конфигурацию
 		}
 		userPlans = append(userPlans, plan)
 	}
@@ -126,9 +128,26 @@ func GetUserByTelegramID(tgid int64) (bool, User) {
 	return false, User{}
 }
 
-//пполучение данных пользователя
-//изменения пользователя
-//изменения пароля пользователя
+// пполучение данных пользователя
+// изменения пользователя
+// изменения пароля пользователя
+// Функция добавления Config по ID продажи
+func AddConfigBySaleID(saleID uint, newConfig string) error {
+	var sale Sale
+
+	// Находим запись продажи по ID
+	if err := db.First(&sale, saleID).Error; err != nil {
+		return fmt.Errorf("не удалось найти продажу с ID %d: %w", saleID, err)
+	}
+
+	// Обновляем поле Config
+	sale.Config = newConfig
+	if err := db.Save(&sale).Error; err != nil {
+		return fmt.Errorf("ошибка обновления Config для продажи с ID %d: %w", saleID, err)
+	}
+
+	return nil
+}
 
 // -------------------------------- ТОВАРЫ --------------------------------
 // добовление новый товар

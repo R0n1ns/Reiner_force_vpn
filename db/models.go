@@ -37,6 +37,8 @@ type Sale struct {
 	gorm.Model
 	Id                  uint      `gorm:"primaryKey;autoIncrement;not null;unique"`
 	Userid              uint      `gorm:"not null"` // внешний ключ для пользователя
+	Peer                string    `gorm:"not null"`
+	Config              string    `gorm:"not null"`
 	User                User      `gorm:"foreignKey:Userid;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Productid           uint      `gorm:"not null"` // внешний ключ для продукта
 	Product             Product   `gorm:"foreignKey:Productid;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
