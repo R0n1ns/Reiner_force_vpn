@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 // настройка wireguard
@@ -134,6 +135,7 @@ func UpdateTraffic() {
 		remainingTraffic := sale.RemainingTraffic - float32(usedTraffic)
 		if remainingTraffic < 0 {
 			remainingTraffic = 0
+
 		}
 
 		sale.RemainingTraffic = remainingTraffic
@@ -144,3 +146,58 @@ func UpdateTraffic() {
 		}
 	}
 }
+
+func DeleteExpiredSales() error {
+	// Получаем текущую дату и время
+	now := time.Now()
+
+	// Находим все записи с истекшей датой
+	var expiredSales []db.Sale
+	if err := db.DB.Where("expiration_date < ?", now).Find(&expiredSales).Error; err != nil {
+		return err
+	}
+
+	// Получаем список ID удаляемых записей
+	var deletedIDs []int
+	for _, sale := range expiredSales {
+		deletedIDs = append(deletedIDs, int(sale.Id))
+	}
+
+	// Удаляем записи
+	result := db.DB.Where("expiration_date < ?", now).Delete(&db.Sale{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Логируем количество удаленных записей
+	log.Printf("Deleted %d expired sales records", result.RowsAffected)
+
+	// Передаем ID в DeleteConf
+	for _, id := range deletedIDs {
+		DeleteConf(id)
+	}
+
+	return nil
+}
+
+//
+//// ScheduleDeletion запускает DeleteExpiredSales каждую ночь в 00:01
+//func ScheduleDeletion() {
+//	go func() {
+//		for {
+//			// Вычисляем время до следующего запуска
+//			now := time.Now()
+//			next := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 1, 0, 0, now.Location())
+//			duration := time.Until(next)
+//
+//			// Ждем до следующего запуска
+//			time.Sleep(duration)
+//
+//			// Выполняем удаление
+//			err := DeleteExpiredSales()
+//			if err != nil {
+//				log.Printf("Error running DeleteExpiredSales: %v", err)
+//			}
+//		}
+//	}()
+//}

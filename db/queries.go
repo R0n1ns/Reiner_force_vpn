@@ -150,6 +150,7 @@ func AddConfigBySaleID(saleID uint, newConfig string) error {
 }
 
 // -------------------------------- ТОВАРЫ --------------------------------
+
 // добовление новый товар
 func Addproduct(product Product) bool {
 	result := db.Create(&product)

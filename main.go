@@ -71,8 +71,7 @@ func main() {
 	app.Use(recover.New())  // Восстановление после паники
 	// JWT Middlewar
 	app.Static("/", "./UI") // подключаем статику
-
-	basicRoutes(app) //базовые маршруты
+	basicRoutes(app)        //базовые маршруты
 	userPages(app)
 	app.Use(func(c *fiber.Ctx) error { return UX.NotFnd(c) }) //обработчик ошибок
 	go func() {
@@ -83,10 +82,16 @@ func main() {
 	go func() {
 		// Запуск планировщика
 		s := gocron.NewScheduler(time.UTC)
-		s.Every(1).Hour().Do(func() {
+		s.Every(1).Minutes().Do(func() {
 			UX.UpdateTraffic()
+		})
+		s.Every(1).Days().Do(func() {
+			UX.DeleteExpiredSales()
 		})
 		s.StartBlocking()
 	}()
+	//go func() {
+	//	UX.ScheduleDeletion()
+	//}()
 	app.Listen(":8080") //что слушать
 }
