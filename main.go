@@ -55,6 +55,30 @@ func userPages(app *fiber.App) {
 
 }
 
+// страницы пользователей
+func adminPages(app *fiber.App) {
+	adminPages := app.Group("/admin")
+	adminPages.Get("/dashboard", UX.AdminDashboard)
+	adminPages.Get("/userspanel", UX.UsersPanel)
+	adminPages.Post("/blockuser", UX.Blockuser)
+	adminPages.Post("/deleteuser", UX.DeleteUser)
+	adminPages.Get("/logs", UX.Logs)
+	adminPages.Get("/products", UX.Products)
+	adminPages.Get("products/add", UX.AddProductPage)        // Страница добавления продукта
+	adminPages.Post("products/saveadd", UX.AddProduct)       // Обработка добавления продукта
+	adminPages.Get("products/edit/:id", UX.EditProductPage)  // Страница редактирования продукта
+	adminPages.Post("products/saveedit/:id", UX.EditProduct) // Обработка редактирования продукта
+	adminPages.Get("products/delete/:id", UX.DeleteProduct)  // Удаление продукта
+
+	adminPages.Use(cors.New(cors.Config{
+		AllowOrigins:     strings.Join([]string{"http://localhost:8080", "http://localhost:8080"}, ","),
+		AllowCredentials: true,
+	}))
+
+	//userPages.Get("/dashboard", UX.Dashboard)
+
+}
+
 func main() {
 	defer func() {
 		err := UX.Wg_client.SaveToFile(UX.Filename)
@@ -73,6 +97,7 @@ func main() {
 	app.Static("/", "./UI") // подключаем статику
 	basicRoutes(app)        //базовые маршруты
 	userPages(app)
+	adminPages(app)
 	app.Use(func(c *fiber.Ctx) error { return UX.NotFnd(c) }) //обработчик ошибок
 	go func() {
 		if err := UX.RunTelegramBot(); err != nil {

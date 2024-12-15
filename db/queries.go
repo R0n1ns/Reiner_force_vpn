@@ -32,14 +32,14 @@ var DB = db
 func Migrations() {
 	//снос таблиц
 	//db.Migrator().DropTable(&User{})
-	//db.Migrator().DropTable(&Products{})
+	db.Migrator().DropTable(&Product{})
 	db.Migrator().DropTable(&Sale{})
 
 	//выполнение миграций
 	//db.AutoMigrate(&User{})
-	//db.AutoMigrate(&Product{})
+	db.AutoMigrate(&Product{})
 	db.AutoMigrate(&Sale{})
-
+	//db.AutoMigrate(&Log{})
 	//отчет
 	log.Println("Миграции выполнены")
 }
@@ -68,6 +68,60 @@ func GetUsers() *[]User {
 	}
 	return &users
 }
+func ToggleBlockUser(userID uint) (error, *User) {
+	var user User
+	if err := DB.First(&user, userID).Error; err != nil {
+		return err, nil
+	}
+	user.Isblocked = !user.Isblocked
+	return DB.Save(&user).Error, &user
+}
+
+// DeleteUserById удаляет пользователя по его ID
+func DeleteUserById(id uint) error {
+	var user User
+
+	// Проверяем, существует ли пользователь
+	if err := db.First(&user, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("пользователь с ID %d не найден", id)
+		}
+		return err
+	}
+
+	// Удаляем пользователя
+	if err := db.Delete(&user).Error; err != nil {
+		return fmt.Errorf("ошибка при удалении пользователя с ID %d: %v", id, err)
+	}
+
+	return nil
+}
+
+// AddLog добавляет новый лог в базу данных
+func AddLog(logName string, logType string) error {
+	log := Log{
+		LogName:    logName,
+		LogType:    logType,
+		LoggedTime: time.Now(), // Устанавливаем текущее время
+	}
+
+	if err := db.Create(&log).Error; err != nil {
+		return fmt.Errorf("не удалось добавить лог: %v", err)
+	}
+
+	return nil
+}
+
+// получить всех пользователей
+func GetSystemLogs() *[]Log {
+	var log_ []Log
+	err := db.Find(&log_)
+	if err.Error != nil {
+		log.Println(err)
+		return &[]Log{}
+	}
+	return &log_
+}
 
 // получение пользователя
 func GetUser(mail string) (bool, User) {
@@ -80,6 +134,37 @@ func GetUser(mail string) (bool, User) {
 	}
 }
 
+// получение пользователя
+func GetUserByName(name string) (bool, User) {
+	var user User
+	res := db.Find(&user, "user_name = ?", name)
+	if res.Error == nil {
+		return true, user
+	} else {
+		return false, User{}
+	}
+}
+
+// Подсчет новых пользователей за указанный период
+func CountNewUsers(start, end time.Time) int64 {
+	var count int64
+	DB.Model(&User{}).Where("created_at BETWEEN ? AND ?", start, end).Count(&count)
+	return count
+}
+
+// Подсчет новых покупок за указанный период
+func CountNewPurchases(start, end time.Time) int64 {
+	var count int64
+	DB.Model(&Sale{}).Where("created_at BETWEEN ? AND ?", start, end).Count(&count)
+	return count
+}
+
+// Подсчет новых записей логов за указанный период (если логов в схеме нет, замените аналогичной таблицей)
+func CountLogs(start, end time.Time) int64 {
+	var count int64
+	DB.Model(&Log{}).Where("created_at BETWEEN ? AND ?", start, end).Count(&count)
+	return count
+}
 func GetUserPlans(username string) ([]map[string]interface{}, error) {
 	var user User
 	if err := db.Where("user_name = ?", username).First(&user).Error; err != nil {

@@ -1,0 +1,40 @@
+{{ define "content" }}
+    <h1 class="mb-4">User Management</h1>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Telegram ID</th>
+                <th>Email</th>
+                <th>Username</th>
+                <th>Blocked</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range . }}
+                <tr>
+                    <td>{{ .Id }}</td>
+                    <td>{{ .Tgid }}</td>
+                    <td>{{ .Mail }}</td>
+                    <td>{{ .UserName }}</td>
+                    <td>{{ if .Isblocked }}Yes{{ else }}No{{ end }}</td>
+                    <td>
+                        <form action="/admin/blockuser" method="POST" style="display: inline;">
+                            <input type="hidden" name="id" value="{{ .Id }}">
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                {{ if .Isblocked }}Unblock{{ else }}Block{{ end }}
+                            </button>
+                        </form>
+                        <form action="/admin/deleteuser" method="POST" style="display: inline;">
+                            <input type="hidden" name="id" value="{{ .Id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+{{ end }}

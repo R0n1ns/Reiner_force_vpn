@@ -129,8 +129,12 @@
             }
 
             const result = await response.json();
-
-            window.location.href = "/user/dashboard";
+            if (result.typ =="user"){
+                window.location.href = "/user/dashboard";
+            }else {
+                window.location.href = "/admin/dashboard";
+            }
+            // window.location.href = "/user/dashboard";
         } catch (error) {
             errorMessage.textContent = "Произошла ошибка. Попробуйте снова.";
         }

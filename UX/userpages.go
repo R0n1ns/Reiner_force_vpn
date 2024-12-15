@@ -31,7 +31,16 @@ func Restricted(c *fiber.Ctx) (bool, string) {
 	}
 	name := claims["name"].(string)
 	if name != "" {
-		return false, name
+		ext, user := db.GetUserByName(name)
+		if ext {
+			if user.Isblocked {
+				return true, ""
+			} else {
+				return false, name
+			}
+		} else {
+			return true, ""
+		}
 	}
 	return true, ""
 }
@@ -41,7 +50,7 @@ func Dashboard(c *fiber.Ctx) error {
 	status, username := Restricted(c) //status,username := ...
 
 	if status {
-		return Auth(c)
+		return c.Redirect("/user/authorization")
 	}
 	// Загружаем и парсим основной шаблон и шаблон контента
 	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/dash.gohtml")
@@ -318,11 +327,10 @@ func FinalizeSale(c *fiber.Ctx) error {
 	if !err {
 		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
 	}
+	db.AddLog(strconv.FormatUint(uint64(sale.Id), 10), "Куплен тариф")
 	_, conf, _ := AddConf(int(sale.Id))
 	SendTelegramConfFile(user.Tgid, "config.conf", conf)
 	db.AddConfigBySaleID(sale.Id, conf)
 	// Mock обработка завершения покупки
-	//log.Printf("Sale finalized for product ID: %s by user: %s\n", productID, username)
-
 	return c.Redirect("/user/purchases")
 }

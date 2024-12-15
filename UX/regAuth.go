@@ -166,6 +166,8 @@ func FinalizeRegistration(c *fiber.Ctx) error {
 	delete(temporaryKeys, request.Key)
 	delete(temporaryKeysStatus, request.Key)
 
+	db.AddLog(username, "Регистрация пользователя")
+
 	// Создаём JWT Claims
 	claims := jwt.MapClaims{
 		"name":  username,
@@ -203,7 +205,19 @@ func FinalizeRegistration(c *fiber.Ctx) error {
 func Auth(c *fiber.Ctx) error {
 	status, _ := Restricted(c)
 	if !status {
-		return Dashboard(c)
+		cookie := c.Cookies("jwt")
+
+		token, _ := jwt.ParseWithClaims(cookie, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(AdminSecretKey), nil
+		})
+
+		claims := token.Claims.(jwt.MapClaims)
+		is_admin := claims["is_admin"].(bool)
+		if is_admin {
+			return c.Redirect("/admin/dashboard")
+		} else {
+			return c.Redirect("/user/dashboard")
+		}
 	}
 	// Парсим файл шаблона
 	tmpl, err := template.ParseFiles("./UI/auth.gohtml")
@@ -237,8 +251,9 @@ func Login(c *fiber.Ctx) error {
 
 	// Create the Claims
 	claims := jwt.MapClaims{
-		"name": data.UserName,
-		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+		"name":     data.UserName,
+		"is_admin": data.IsAdmin,
+		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	}
 	// Create token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -255,9 +270,19 @@ func Login(c *fiber.Ctx) error {
 		HTTPOnly: true,
 	}
 	c.Cookie(&cookie)
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+
+	if data.IsAdmin {
+		//return c.Redirect("/admin/dashboard")
+		return c.JSON(fiber.Map{
+			"message": "success", "typ": "admin",
+		})
+	} else {
+		//return c.Redirect("/user/dashboard")
+		return c.JSON(fiber.Map{
+			"message": "success", "typ": "user",
+		})
+	}
+
 }
 
 func Logout(c *fiber.Ctx) error {
@@ -307,8 +332,9 @@ func FinalizeLogin(c *fiber.Ctx) error {
 	}
 	// Create the Claims
 	claims := jwt.MapClaims{
-		"name": data.UserName,
-		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+		"name":     data.UserName,
+		"is_admin": data.IsAdmin,
+		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	}
 	// Create token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

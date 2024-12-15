@@ -1,0 +1,34 @@
+{{ define "content" }}
+    <h1 class="m-4 ">Admin Dashboard</h1>
+    <div class="row m-2">
+        <!-- Новые пользователи -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Новые пользователи</h5>
+                    <p class="card-text">{{ .NewUsersCount }} за последние 24 часа</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Новые покупки -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Новые покупки</h5>
+                    <p class="card-text">{{ .NewPurchasesCount }} за последние 24 часа</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Новые логи -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Новые логи</h5>
+                    <p class="card-text">{{ .NewLogsCount }} за последние 24 часа</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ end }}

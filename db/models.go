@@ -36,14 +36,22 @@ type Product struct {
 type Sale struct {
 	gorm.Model
 	Id                  uint      `gorm:"primaryKey;autoIncrement;not null;unique"`
-	Userid              uint      `gorm:"not null"` // внешний ключ для пользователя
+	Userid              uint      `gorm:"not null"` // Внешний ключ для пользователя
 	Peer                string    `gorm:"not null"`
 	Config              string    `gorm:"not null"`
 	User                User      `gorm:"foreignKey:Userid;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Productid           uint      `gorm:"not null"` // внешний ключ для продукта
+	Productid           uint      `gorm:"not null"` // Внешний ключ для продукта
 	Product             Product   `gorm:"foreignKey:Productid;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	ISFrozen            bool      `gorm:"default:false"`
 	ExpirationFrozeDate uint      `gorm:""`
-	ExpirationDate      time.Time `gorm:""` // колонка для даты истечения тарифа
-	RemainingTraffic    float32   `gorm:""` // колонка оставшегося трафика
+	ExpirationDate      time.Time `gorm:""`
+	RemainingTraffic    float32   `gorm:""`
+}
+
+// Модель для логов
+type Log struct {
+	gorm.Model
+	LogName    string    `gorm:"not null"`            // Название лога
+	LogType    string    `gorm:"not null"`            // Тип лога (например, "info", "error")
+	LoggedTime time.Time `gorm:"autoCreateTime:nano"` // Время создания лога
 }
