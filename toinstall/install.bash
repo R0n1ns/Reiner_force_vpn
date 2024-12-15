@@ -43,13 +43,9 @@ sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" ||
 sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" || echo "База данных $DB_NAME уже существует."
 
 # Импорт дампа
-if [ -f "$DB_DUMP" ]; then
-    sudo -u postgres psql -U $DB_USER -d $DB_NAME -f "$DB_DUMP"
-    echo "Дамп $DB_DUMP успешно импортирован в $DB_NAME."
-else
-    echo "Ошибка: Файл $DB_DUMP не найден. Убедитесь, что он находится в текущей директории."
-    exit 1
-fi
+sudo +x migrate
+
+sudo migrate
 
 sudo +x main
 # Уведомление об успешной установке

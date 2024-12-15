@@ -330,7 +330,10 @@ func FinalizeSale(c *fiber.Ctx) error {
 	db.AddLog(strconv.FormatUint(uint64(sale.Id), 10), "Куплен тариф")
 	_, conf, _ := AddConf(int(sale.Id))
 	SendTelegramConfFile(user.Tgid, "config.conf", conf)
-	db.AddConfigBySaleID(sale.Id, conf)
+	er := db.AddConfigBySaleID(sale.Id, conf)
+	if er != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+	}
 	// Mock обработка завершения покупки
 	return c.Redirect("/user/purchases")
 }

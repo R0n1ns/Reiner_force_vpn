@@ -32,8 +32,8 @@ var DB = db
 func Migrations() {
 	//снос таблиц
 	//db.Migrator().DropTable(&User{})
-	db.Migrator().DropTable(&Product{})
-	db.Migrator().DropTable(&Sale{})
+	//db.Migrator().DropTable(&Product{})
+	//db.Migrator().DropTable(&Sale{})
 
 	//выполнение миграций
 	//db.AutoMigrate(&User{})
