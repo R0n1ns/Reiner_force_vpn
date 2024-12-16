@@ -316,24 +316,56 @@ func ConfirmPayment(c *fiber.Ctx) error {
 
 // Обработчик завершения покупки
 func FinalizeSale(c *fiber.Ctx) error {
-	_, username := Restricted(c) // Проверка авторизации
+	// Проверка авторизации
+	_, username := Restricted(c)
 
+	// Получение параметров запроса
 	productID := c.Query("product_id")
-	if productID == "" || username == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Product ID and username are required")
+	if productID == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Product ID is required")
 	}
-	_, user := db.GetUserUsername(username)
-	err, sale, _ := db.AddProductToUser(username, productID)
-	if !err {
-		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+
+	// Получение данных пользователя
+	found, user := db.GetUserUsername(username)
+	if !found {
+		return c.Status(fiber.StatusNotFound).SendString("User not found")
 	}
-	db.AddLog(strconv.FormatUint(uint64(sale.Id), 10), "Куплен тариф")
-	_, conf, _ := AddConf(int(sale.Id))
-	SendTelegramConfFile(user.Tgid, "config.conf", conf)
-	er := db.AddConfigBySaleID(sale.Id, conf)
-	if er != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+
+	// Добавление продукта пользователю
+	success, sale, err := db.AddProductToUser(username, productID)
+	if err != nil || !success {
+		log.Printf("Ошибка добавления продукта пользователю: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to add product to user")
 	}
-	// Mock обработка завершения покупки
+
+	// Добавление записи в лог
+	err = db.AddLog(strconv.FormatUint(uint64(sale.Id), 10), "Куплен тариф")
+	if err != nil {
+		log.Printf("Ошибка добавления лога: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to log purchase")
+	}
+
+	// Генерация конфигурационного файла
+	_, conf, err := AddConf(int(sale.Id))
+	if err != nil {
+		log.Printf("Ошибка создания конфигурации: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to generate configuration")
+	}
+
+	// Отправка конфигурации пользователю
+	err = SendTelegramConfFile(user.Tgid, "config.conf", conf)
+	if err != nil {
+		log.Printf("Ошибка отправки конфигурации через Telegram: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to send configuration via Telegram")
+	}
+
+	// Сохранение конфигурации в базе данных
+	err = db.AddConfigBySaleID(sale.Id, conf)
+	if err != nil {
+		log.Printf("Ошибка сохранения конфигурации в базе данных: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save configuration")
+	}
+
+	// Успешное завершение покупки
 	return c.Redirect("/user/purchases")
 }
