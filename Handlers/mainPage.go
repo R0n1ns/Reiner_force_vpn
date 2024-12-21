@@ -1,4 +1,4 @@
-package UX
+package Handlers
 
 import (
 	"Project/db"
@@ -11,7 +11,7 @@ import (
 // станица для ошибок
 func NotFnd(c *fiber.Ctx) error {
 	// Парсим файл шаблона
-	tmpl, err := template.ParseFiles("./UI/notFaund.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/notFaund.gohtml")
 	if err != nil {
 		log.Println(err.Error())
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -31,7 +31,7 @@ func NotFnd(c *fiber.Ctx) error {
 // главная страница
 func Home(c *fiber.Ctx) error {
 	// Парсим файл шаблона
-	tmpl, err := template.ParseFiles("./UI/mainPage.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/mainPage.gohtml")
 	if err != nil {
 		log.Println(err.Error())
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")

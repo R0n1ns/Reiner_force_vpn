@@ -1,4 +1,4 @@
-package UX
+package Handlers
 
 import (
 	"Project/db"
@@ -53,7 +53,7 @@ func Dashboard(c *fiber.Ctx) error {
 		return c.Redirect("/user/authorization")
 	}
 	// Загружаем и парсим основной шаблон и шаблон контента
-	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/dash.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebar.gohtml", "./Templates/dash.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -91,7 +91,7 @@ func Tariffs(c *fiber.Ctx) error {
 		return Auth(c)
 	}
 	// Загружаем и парсим основной шаблон и шаблон контента
-	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/tarifs.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebar.gohtml", "./Templates/tarifs.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -129,7 +129,7 @@ func Purchases(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 	// Загружаем и парсим основной шаблон и шаблон контента
-	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/purchases.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebar.gohtml", "./Templates/purchases.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -221,7 +221,7 @@ func FAQ(c *fiber.Ctx) error {
 		return Auth(c)
 	}
 	// Загружаем и парсим основной шаблон (sidebar) и FAQ шаблон
-	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/faq.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebar.gohtml", "./Templates/faq.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -265,7 +265,7 @@ func PaymentPage(c *fiber.Ctx) error {
 		"Traffic":   product.Traffic,
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebar.gohtml", "./UI/payment.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebar.gohtml", "./Templates/payment.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")

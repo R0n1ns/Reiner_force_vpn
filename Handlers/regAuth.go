@@ -1,4 +1,4 @@
-package UX
+package Handlers
 
 import (
 	"Project/db"
@@ -68,7 +68,7 @@ func handleTelegramStart(telegramBot *tgbotapi.BotAPI, update tgbotapi.Update) {
 // страница регистрации
 func Reg(c *fiber.Ctx) error {
 	// Парсим файл шаблона
-	tmpl, err := template.ParseFiles("./UI/registr.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/registr.gohtml")
 	if err != nil {
 		log.Println(err.Error())
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -220,7 +220,7 @@ func Auth(c *fiber.Ctx) error {
 		}
 	}
 	// Парсим файл шаблона
-	tmpl, err := template.ParseFiles("./UI/auth.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/auth.gohtml")
 	if err != nil {
 		log.Println(err.Error())
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")

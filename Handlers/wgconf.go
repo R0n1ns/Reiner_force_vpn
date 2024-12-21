@@ -1,4 +1,4 @@
-package UX
+package Handlers
 
 import (
 	"Project/db"

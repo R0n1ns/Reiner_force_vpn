@@ -1,4 +1,4 @@
-package UX
+package Handlers
 
 import (
 	"Project/db"
@@ -73,7 +73,7 @@ func AdminDashboard(c *fiber.Ctx) error {
 		"NewLogsCount":      newLogsCount,
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/dashadmin.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/dashadmin.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -96,7 +96,7 @@ func UsersPanel(c *fiber.Ctx) error {
 	}
 
 	// Загрузка шаблонов
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/userspanel.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/userspanel.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -161,7 +161,7 @@ func Logs(c *fiber.Ctx) error {
 		return c.Redirect("/login")
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/logs.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/logs.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -187,7 +187,7 @@ func Products(c *fiber.Ctx) error {
 		return c.Redirect("/login")
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/products.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/products.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -217,7 +217,7 @@ func AddProductPage(c *fiber.Ctx) error {
 		return c.Redirect("/login")
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/add_product.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/add_product.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
@@ -291,7 +291,7 @@ func EditProductPage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Product not found")
 	}
 
-	tmpl, err := template.ParseFiles("./UI/sidebaradmin.gohtml", "./UI/edit_product.gohtml")
+	tmpl, err := template.ParseFiles("./Templates/sidebaradmin.gohtml", "./Templates/edit_product.gohtml")
 	if err != nil {
 		log.Println("Ошибка загрузки шаблона:", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")

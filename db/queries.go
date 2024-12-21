@@ -15,10 +15,10 @@ func init_() *gorm.DB {
 	if load_err != nil {
 		log.Println("Ошибка подключения к базе", load_err)
 	}
-	load_err = godotenv.Load("configtest.env")
-	if load_err != nil {
-		log.Println("Ошибка подключения к базе", load_err)
-	}
+	//load_err = godotenv.Load("configtest.env")
+	//if load_err != nil {
+	//	log.Println("Ошибка подключения к базе", load_err)
+	//}
 
 	var db_path = os.Getenv("DB_PATH")
 

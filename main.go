@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Project/UX"
+	"Project/Handlers"
 	"fmt"
 	"github.com/go-co-op/gocron"
 	"github.com/gofiber/fiber/v2"
@@ -17,71 +17,71 @@ import (
 // базовые пути сайта
 func basicRoutes(app *fiber.App) {
 	basic := app.Group("/")
-	basic.Get("/home", UX.Home)
-	basic.Post("/login", UX.Login)
-	basic.Post("/register", UX.Login)
-	app.Post("/generate-key", UX.GenerateKey)
-	app.Get("/check-key", UX.CheckKey)
-	app.Post("/finalize-registration", UX.FinalizeRegistration)
-	app.Post("/finalize-login", UX.FinalizeLogin)
-	app.Get("/logout", UX.Logout)
-	app.Get("/support", UX.FAQ)
+	basic.Get("/home", Handlers.Home)
+	basic.Post("/login", Handlers.Login)
+	basic.Post("/register", Handlers.Login)
+	app.Post("/generate-key", Handlers.GenerateKey)
+	app.Get("/check-key", Handlers.CheckKey)
+	app.Post("/finalize-registration", Handlers.FinalizeRegistration)
+	app.Post("/finalize-login", Handlers.FinalizeLogin)
+	app.Get("/logout", Handlers.Logout)
+	app.Get("/support", Handlers.FAQ)
 
 }
 
 // страницы пользователей
 func userPages(app *fiber.App) {
 	userPages := app.Group("/user")
-	userPages.Get("/registration", UX.Reg)
-	userPages.Get("/authorization", UX.Auth)
-	userPages.Get("/dashboard", UX.Dashboard)
-	userPages.Get("/tariffs", UX.Tariffs)
-	userPages.Get("/purchases", UX.Purchases)
-	userPages.Get("/tariff/:id", UX.PaymentPage)
+	userPages.Get("/registration", Handlers.Reg)
+	userPages.Get("/authorization", Handlers.Auth)
+	userPages.Get("/dashboard", Handlers.Dashboard)
+	userPages.Get("/tariffs", Handlers.Tariffs)
+	userPages.Get("/purchases", Handlers.Purchases)
+	userPages.Get("/tariff/:id", Handlers.PaymentPage)
 	// Route to redirect to payment
-	userPages.Get("/redirect-payment", UX.RedirectToPayment)
+	userPages.Get("/redirect-payment", Handlers.RedirectToPayment)
 	// Route to confirm payment
-	userPages.Post("/confirm-payment", UX.ConfirmPayment)
+	userPages.Post("/confirm-payment", Handlers.ConfirmPayment)
 	// Route to finalize the purchase
-	userPages.Get("/sale", UX.FinalizeSale)
-	userPages.Post("/send-config/:id", UX.SendConfig)
+	userPages.Get("/sale", Handlers.FinalizeSale)
+	userPages.Post("/send-config/:id", Handlers.SendConfig)
 
 	userPages.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join([]string{"http://localhost:8080", "http://localhost:8080"}, ","),
 		AllowCredentials: true,
 	}))
 
-	//userPages.Get("/dashboard", UX.Dashboard)
+	//userPages.Get("/dashboard", Handlers.Dashboard)
 
 }
 
 // страницы пользователей
 func adminPages(app *fiber.App) {
 	adminPages := app.Group("/admin")
-	adminPages.Get("/dashboard", UX.AdminDashboard)
-	adminPages.Get("/userspanel", UX.UsersPanel)
-	adminPages.Post("/blockuser", UX.Blockuser)
-	adminPages.Post("/deleteuser", UX.DeleteUser)
-	adminPages.Get("/logs", UX.Logs)
-	adminPages.Get("/products", UX.Products)
-	adminPages.Get("products/add", UX.AddProductPage)        // Страница добавления продукта
-	adminPages.Post("products/saveadd", UX.AddProduct)       // Обработка добавления продукта
-	adminPages.Get("products/edit/:id", UX.EditProductPage)  // Страница редактирования продукта
-	adminPages.Post("products/saveedit/:id", UX.EditProduct) // Обработка редактирования продукта
-	adminPages.Get("products/delete/:id", UX.DeleteProduct)  // Удаление продукта
+	adminPages.Get("/dashboard", Handlers.AdminDashboard)
+	adminPages.Get("/userspanel", Handlers.UsersPanel)
+	adminPages.Post("/blockuser", Handlers.Blockuser)
+	adminPages.Post("/deleteuser", Handlers.DeleteUser)
+	adminPages.Get("/logs", Handlers.Logs)
+	adminPages.Get("/products", Handlers.Products)
+	adminPages.Get("products/add", Handlers.AddProductPage)        // Страница добавления продукта
+	adminPages.Post("products/saveadd", Handlers.AddProduct)       // Обработка добавления продукта
+	adminPages.Get("products/edit/:id", Handlers.EditProductPage)  // Страница редактирования продукта
+	adminPages.Post("products/saveedit/:id", Handlers.EditProduct) // Обработка редактирования продукта
+	adminPages.Get("products/delete/:id", Handlers.DeleteProduct)  // Удаление продукта
 
 	adminPages.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join([]string{"http://localhost:8080", "http://localhost:8080"}, ","),
 		AllowCredentials: true,
 	}))
 
-	//userPages.Get("/dashboard", UX.Dashboard)
+	//userPages.Get("/dashboard", Handlers.Dashboard)
 
 }
 
 func main() {
 	defer func() {
-		err := UX.Wg_client.SaveToFile(UX.Filename)
+		err := Handlers.Wg_client.SaveToFile(Handlers.Filename)
 		if err != nil {
 			fmt.Printf("Ошибка при сохранении файла: %v", err)
 		} else {
@@ -94,13 +94,13 @@ func main() {
 	app.Use(compress.New()) // Сжатие ответов
 	app.Use(recover.New())  // Восстановление после паники
 	// JWT Middlewar
-	app.Static("/", "./UI") // подключаем статику
-	basicRoutes(app)        //базовые маршруты
+	app.Static("/", "./Templates") // подключаем статику
+	basicRoutes(app)               //базовые маршруты
 	userPages(app)
 	adminPages(app)
-	app.Use(func(c *fiber.Ctx) error { return UX.NotFnd(c) }) //обработчик ошибок
+	app.Use(func(c *fiber.Ctx) error { return Handlers.NotFnd(c) }) //обработчик ошибок
 	go func() {
-		if err := UX.RunTelegramBot(); err != nil {
+		if err := Handlers.RunTelegramBot(); err != nil {
 			log.Fatalf("Ошибка запуска Telegram бота: %v", err)
 		}
 	}()
@@ -108,15 +108,15 @@ func main() {
 		// Запуск планировщика
 		s := gocron.NewScheduler(time.UTC)
 		s.Every(1).Minutes().Do(func() {
-			UX.UpdateTraffic()
+			Handlers.UpdateTraffic()
 		})
 		s.Every(1).Days().Do(func() {
-			UX.DeleteExpiredSales()
+			Handlers.DeleteExpiredSales()
 		})
 		s.StartBlocking()
 	}()
 	//go func() {
-	//	UX.ScheduleDeletion()
+	//	Handlers.ScheduleDeletion()
 	//}()
 	app.Listen(":8080") //что слушать
 }
